@@ -10,6 +10,7 @@ dependencies = [
     "tabulate",
     "safetensors",
     "huggingface-hub",
+    "sentence-transformers",
 ]
 
 [tool.hatch.build.targets.wheel]
