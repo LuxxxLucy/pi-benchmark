@@ -8,7 +8,12 @@ dependencies = [
     "datasets>=2.0",
     "pandas",
     "tabulate",
+    "safetensors",
+    "huggingface-hub",
 ]
+
+[tool.hatch.build.targets.wheel]
+packages = ["scripts"]
 
 [build-system]
 requires = ["hatchling"]
