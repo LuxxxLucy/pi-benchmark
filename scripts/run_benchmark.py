@@ -136,15 +136,49 @@ class ModelResult:
         }
 
 
-def load_deepset_dataset():
-    """Load deepset/prompt-injections dataset."""
-    ds = load_dataset("deepset/prompt-injections", split="test")
+def _load_binary_dataset(hf_id, text_col, label_col, injection_label, split=None):
+    """Load a dataset with binary labels."""
+    if split:
+        ds = load_dataset(hf_id, split=split)
+        all_rows = list(ds)
+    else:
+        ds = load_dataset(hf_id)
+        all_rows = []
+        for s in ds:
+            all_rows.extend(ds[s])
     samples = []
-    for row in ds:
-        text = row["text"]
-        label = row["label"]  # 0 = benign, 1 = injection
-        samples.append({"text": text, "is_injection": label == 1})
+    for row in all_rows:
+        text = row[text_col]
+        label = row[label_col]
+        samples.append({"text": text, "is_injection": label == injection_label})
     return samples
+
+
+def _load_jailbreakbench():
+    """Load JailbreakBench harmful/benign behaviors."""
+    ds = load_dataset("JailbreakBench/JBB-Behaviors", "behaviors")
+    samples = []
+    for row in ds["harmful"]:
+        samples.append({"text": row["Goal"], "is_injection": True})
+    for row in ds["benign"]:
+        samples.append({"text": row["Goal"], "is_injection": False})
+    return samples
+
+
+DATASETS = {
+    "deepset-all": {
+        "desc": "deepset/prompt-injections (all splits)",
+        "loader": lambda: _load_binary_dataset("deepset/prompt-injections", text_col="text", label_col="label", injection_label=1),
+    },
+    "xTRam1": {
+        "desc": "xTRam1/safe-guard-prompt-injection (10K+)",
+        "loader": lambda: _load_binary_dataset("xTRam1/safe-guard-prompt-injection", text_col="text", label_col="label", injection_label=1),
+    },
+    "jailbreakbench": {
+        "desc": "JailbreakBench/JBB-Behaviors (harmful vs benign goals)",
+        "loader": _load_jailbreakbench,
+    },
+}
 
 
 INJECTION_LABEL_NAMES = {"injection", "jailbreak", "unsafe", "malicious", "harmful"}
@@ -319,30 +353,43 @@ def main():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--models", nargs="+", default=None,
-                        help="Specific models to run (default: all)")
+                        help=f"Models to run (default: non-gated). Options: {list(MODELS.keys())}")
+    parser.add_argument("--datasets", nargs="+", default=None,
+                        help=f"Datasets to run (default: all). Options: {list(DATASETS.keys())}")
     parser.add_argument("--max-samples", type=int, default=None,
                         help="Limit samples per dataset (for quick test)")
     args = parser.parse_args()
 
-    models_to_run = args.models or list(MODELS.keys())
+    # Default: skip gated models
+    if args.models:
+        models_to_run = args.models
+    else:
+        models_to_run = [k for k, v in MODELS.items() if not v.get("gated")]
 
-    # Load dataset
-    print("Loading deepset/prompt-injections dataset...")
-    samples = load_deepset_dataset()
-    if args.max_samples:
-        samples = samples[:args.max_samples]
-    print(f"Loaded {len(samples)} samples")
+    datasets_to_run = args.datasets or list(DATASETS.keys())
 
-    # Run benchmarks
     all_results = []
-    for model_name in models_to_run:
-        if model_name not in MODELS:
-            print(f"Unknown model: {model_name}, skipping")
+    for ds_name in datasets_to_run:
+        if ds_name not in DATASETS:
+            print(f"Unknown dataset: {ds_name}, skipping")
             continue
-        result = run_model_on_dataset(model_name, MODELS[model_name], samples, "deepset/prompt-injections")
-        all_results.append(result)
+        ds_info = DATASETS[ds_name]
+        print(f"\n{'#'*60}")
+        print(f"Loading dataset: {ds_info['desc']}")
+        print(f"{'#'*60}")
+        samples = ds_info["loader"]()
+        if args.max_samples:
+            samples = samples[:args.max_samples]
+        n_inj = sum(1 for s in samples if s["is_injection"])
+        print(f"Loaded {len(samples)} samples ({n_inj} injection, {len(samples)-n_inj} safe)")
 
-    # Write results
+        for model_name in models_to_run:
+            if model_name not in MODELS:
+                print(f"Unknown model: {model_name}, skipping")
+                continue
+            result = run_model_on_dataset(model_name, MODELS[model_name], samples, ds_name)
+            all_results.append(result)
+
     write_results(all_results)
 
 
