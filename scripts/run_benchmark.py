@@ -101,6 +101,7 @@ MODELS: dict[str, dict] = {
     "embedding-knn": {"custom": "embedding_knn", "params": "~23M"},
     # Indirect injection classifiers
     "stackone-repro": {"custom": "stackone_repro", "params": "~23M"},
+    "minilm-indirect-v1": {"custom": "minilm_indirect_v1", "params": "~23M"},
 }
 
 
@@ -140,6 +141,16 @@ def _load_custom_classifier(name: str) -> ClassifierFn:
         def classify(text):
             t0 = time.perf_counter()
             r = so_classify(text)
+            return r, (time.perf_counter() - t0) * 1000
+        return classify
+
+    elif name == "minilm_indirect_v1":
+        indirect_dir = Path(__file__).parent.parent.parent / "indirect"
+        sys.path.insert(0, str(indirect_dir))
+        from train_classifier import classify as mlm_classify
+        def classify(text):
+            t0 = time.perf_counter()
+            r = mlm_classify(text)
             return r, (time.perf_counter() - t0) * 1000
         return classify
 
