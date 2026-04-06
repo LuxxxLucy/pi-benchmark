@@ -99,6 +99,8 @@ MODELS: dict[str, dict] = {
     "rule-based":    {"custom": "rule_based", "params": "0"},
     "hybrid":        {"custom": "hybrid", "params": "~86M"},
     "embedding-knn": {"custom": "embedding_knn", "params": "~23M"},
+    # Indirect injection classifiers
+    "stackone-repro": {"custom": "stackone_repro", "params": "~23M"},
 }
 
 
@@ -128,6 +130,16 @@ def _load_custom_classifier(name: str) -> ClassifierFn:
         def classify(text):
             t0 = time.perf_counter()
             r = emb_classify(text)
+            return r, (time.perf_counter() - t0) * 1000
+        return classify
+
+    elif name == "stackone_repro":
+        indirect_dir = Path(__file__).parent.parent.parent / "indirect"
+        sys.path.insert(0, str(indirect_dir))
+        from stackone_python import classify as so_classify
+        def classify(text):
+            t0 = time.perf_counter()
+            r = so_classify(text)
             return r, (time.perf_counter() - t0) * 1000
         return classify
 

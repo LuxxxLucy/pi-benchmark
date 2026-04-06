@@ -11,6 +11,8 @@ dependencies = [
     "safetensors",
     "huggingface-hub",
     "sentence-transformers",
+    "onnxruntime",
+    "tokenizers",
 ]
 
 [tool.hatch.build.targets.wheel]
