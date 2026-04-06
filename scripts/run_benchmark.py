@@ -104,7 +104,7 @@ MODELS: dict[str, dict] = {
 
 def _load_custom_classifier(name: str) -> ClassifierFn:
     """Load a custom classifier by name."""
-    research_dir = Path(__file__).parent.parent.parent / "research" / "hybrid_methods"
+    research_dir = Path(__file__).parent.parent.parent / "direct"
     sys.path.insert(0, str(research_dir))
 
     if name == "rule_based":
@@ -154,10 +154,70 @@ def _load_jailbreakbench():
             [{"text": r["Goal"], "is_injection": False} for r in ds["benign"]])
 
 
+def _load_bipia():
+    """Load BIPIA indirect injection dataset from local repo.
+
+    Generates poisoned samples by inserting attack strings into benign contexts
+    (email, code, table). Each poisoned context is labeled as injection; each
+    clean context is included once as benign.
+    """
+    import random
+    bipia_dir = Path(__file__).parent.parent.parent / "indirect" / "bipia_repo" / "benchmark"
+
+    # Load attack strings
+    with open(bipia_dir / "text_attack_test.json") as f:
+        attacks_raw = json.load(f)
+    attacks = []
+    for variants in attacks_raw.values():
+        attacks.extend(variants)
+
+    # Load benign contexts from all available categories
+    samples = []
+    for category in ["email", "code", "table"]:
+        cat_dir = bipia_dir / category
+        test_file = cat_dir / "test.jsonl"
+        if not test_file.exists():
+            continue
+        with open(test_file) as f:
+            for line in f:
+                row = json.loads(line)
+                context = row.get("context", "")
+                if isinstance(context, list):
+                    context = "\n".join(str(c) for c in context)
+                if not context:
+                    continue
+                # Add clean context as benign
+                samples.append({"text": context, "is_injection": False})
+                # Insert a random attack into the context (injection sample)
+                attack = random.choice(attacks)
+                poisoned = context + "\n\n" + attack
+                samples.append({"text": poisoned, "is_injection": True})
+
+    random.shuffle(samples)
+    return samples
+
+
+def _load_notinject():
+    """Load NotInject dataset — benign prompts with trigger words (FPR test).
+
+    All 339 samples are benign (is_injection=False). Measures false positive rate.
+    """
+    ds = load_dataset("leolee99/NotInject")
+    samples = []
+    for split in ds:
+        for r in ds[split]:
+            samples.append({"text": r["prompt"], "is_injection": False})
+    return samples
+
+
 DATASETS = {
+    # Direct injection datasets
     "deepset-all":    {"desc": "deepset/prompt-injections (662)", "loader": lambda: _load_binary("deepset/prompt-injections")},
     "xTRam1":         {"desc": "xTRam1/safe-guard (10K+)", "loader": lambda: _load_binary("xTRam1/safe-guard-prompt-injection")},
     "jailbreakbench": {"desc": "JailbreakBench (200)", "loader": _load_jailbreakbench},
+    # Indirect injection datasets
+    "bipia":          {"desc": "BIPIA indirect injection (400)", "loader": _load_bipia},
+    "notinject":      {"desc": "NotInject FPR-only (339 benign)", "loader": _load_notinject},
 }
 
 
