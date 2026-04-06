@@ -209,6 +209,27 @@ def _load_bipia():
     return samples
 
 
+def _load_xxz224():
+    """Load xxz224 prompt-injection-attack-dataset (~3747 rows).
+
+    Each row has a benign target_text and 5 attack variants. We include the
+    target_text as benign and each attack column as an injection sample.
+    """
+    ds = load_dataset("xxz224/prompt-injection-attack-dataset", split="train")
+    attack_cols = ["naive_attack", "escape_attack", "ignore_attack",
+                   "fake_comp_attack", "combine_attack"]
+    samples = []
+    seen_benign = set()
+    for r in ds:
+        txt = r["target_text"]
+        if txt not in seen_benign:
+            seen_benign.add(txt)
+            samples.append({"text": txt, "is_injection": False})
+        for col in attack_cols:
+            samples.append({"text": r[col], "is_injection": True})
+    return samples
+
+
 def _load_notinject():
     """Load NotInject dataset — benign prompts with trigger words (FPR test).
 
@@ -230,6 +251,9 @@ DATASETS = {
     # Indirect injection datasets
     "bipia":          {"desc": "BIPIA indirect injection (400)", "loader": _load_bipia},
     "notinject":      {"desc": "NotInject FPR-only (339 benign)", "loader": _load_notinject},
+    # Multi-attack / large-scale datasets
+    "xxz224":         {"desc": "xxz224 task-hijacking attacks (22K)", "loader": _load_xxz224},
+    "jayavibhav":     {"desc": "jayavibhav prompt-injection test (65K)", "loader": lambda: _load_binary("jayavibhav/prompt-injection", split="test")},
 }
 
 
