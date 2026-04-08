@@ -1,6 +1,8 @@
 models/
 datasets/
+results/
 __pycache__/
 *.pyc
 .venv/
 *.egg-info/
+uv.lock

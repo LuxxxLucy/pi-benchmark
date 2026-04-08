@@ -13,7 +13,14 @@ dependencies = [
     "sentence-transformers",
     "onnxruntime",
     "tokenizers",
+    "pyyaml>=6.0",
+    "simple-defender-py",
+    "scikit-learn>=1.4",
+    "lightgbm>=4.0",
 ]
+
+[tool.uv.sources]
+simple-defender-py = { path = "../../simple-defender/simple-defender-py" }
 
 [tool.hatch.build.targets.wheel]
 packages = ["scripts"]

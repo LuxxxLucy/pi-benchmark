@@ -1,0 +1,415 @@
+# Benchmark configuration — models, datasets, and composable pipelines.
+
+models:
+  # HuggingFace models
+  fmops-distilbert:
+    type: hf
+    hf_id: "Fmops/distilbert-prompt-injection"
+    params: "66M"
+    injection_labels: [1]
+
+  protectai-base-v1:
+    type: hf
+    hf_id: "protectai/deberta-v3-base-prompt-injection"
+    params: "86M"
+    injection_labels: [1]
+
+  protectai-base-v2:
+    type: hf
+    hf_id: "protectai/deberta-v3-base-prompt-injection-v2"
+    params: "86M"
+    injection_labels: [1]
+
+  vsr-jailbreak-modernbert:
+    type: hf
+    hf_id: "LLM-Semantic-Router/jailbreak_classifier_modernbert-base_model"
+    params: "149M"
+    injection_labels: [1]
+
+  vsr-jailbreak-mmbert32k-merged:
+    type: hf
+    hf_id: "llm-semantic-router/mmbert32k-jailbreak-detector-merged"
+    params: "307M"
+    injection_labels: [1]
+
+  # Pre-trained PI detectors (discovered via research)
+  acuvity-distilbert:
+    type: hf
+    hf_id: "acuvity/distilbert-base-uncased-prompt-injection-v0.1"
+    params: "67M"
+    injection_labels: [1]
+
+  testsavantai-tiny:
+    type: hf
+    hf_id: "testsavantai/prompt-injection-defender-tiny-v0"
+    params: "4.4M"
+    injection_labels: [1]
+
+  testsavantai-base:
+    type: hf
+    hf_id: "testsavantai/prompt-injection-defender-base-v0"
+    params: "67M"
+    injection_labels: [1]
+
+  hlyn-deberta-70m:
+    type: hf
+    hf_id: "hlyn/prompt-injection-judge-deberta-70m"
+    params: "70.8M"
+    injection_labels: [1]
+
+  testsavantai-small:
+    type: hf
+    hf_id: "testsavantai/prompt-injection-defender-small-v0"
+    params: "28.8M"
+    injection_labels: [1]  # labels unconfirmed
+
+  testsavantai-medium:
+    type: hf
+    hf_id: "testsavantai/prompt-injection-defender-medium-v0"
+    params: "41.4M"
+    injection_labels: [1]  # labels unconfirmed
+
+  testsavantai-large:
+    type: hf
+    hf_id: "testsavantai/prompt-injection-defender-large-v0"
+    params: "200M"
+    injection_labels: [1]  # labels: benign/malicious; "malicious" matched by INJECTION_LABEL_NAMES
+
+  deepset-deberta-injection:
+    type: hf
+    hf_id: "deepset/deberta-v3-base-injection"
+    params: "200M"
+    injection_labels: [1]  # labels: LEGIT/INJECTION; "INJECTION" matched by INJECTION_LABEL_NAMES
+
+  madhurjindal-jailbreak:
+    type: hf
+    hf_id: "madhurjindal/Jailbreak-Detector"
+    params: "280M"
+    injection_labels: [1]  # labels: benign/jailbreak; "jailbreak" matched by INJECTION_LABEL_NAMES
+
+  vijil-mbert:
+    type: hf
+    hf_id: "vijil/mbert-prompt-injection"
+    params: "100M"
+    injection_labels: [1]  # labels unconfirmed
+
+  jasperls-gelectra:
+    type: hf
+    hf_id: "JasperLS/gelectra-base-injection"
+    params: "110M"
+    injection_labels: [1]  # labels unconfirmed
+
+  patronus-wolf-defender:
+    type: hf
+    hf_id: "patronus-studio/wolf-defender-prompt-injection"
+    params: "300M"
+    injection_labels: [1]  # labels: 0=benign, 1=injection
+
+  # Gated (need HF approval)
+  prompt-guard-22m:
+    type: hf
+    hf_id: "meta-llama/Llama-Prompt-Guard-2-22M"
+    params: "22M"
+    injection_labels: [1, 2]
+    gated: true
+
+  prompt-guard-86m:
+    type: hf
+    hf_id: "meta-llama/Llama-Prompt-Guard-2-86M"
+    params: "86M"
+    injection_labels: [1, 2]
+    gated: true
+
+  protectai-small-v2:
+    type: hf
+    hf_id: "protectai/deberta-v3-small-prompt-injection-v2"
+    params: "44M"
+    injection_labels: [1]
+    gated: true
+
+  # Custom classifiers
+  rule-based:
+    type: custom
+    custom: rule_based
+    params: "0"
+
+  hybrid:
+    type: custom
+    custom: hybrid
+    params: "~86M"
+
+  embedding-knn:
+    type: custom
+    custom: embedding_knn
+    params: "~23M"
+
+  # Indirect injection classifiers
+  stackone-repro:
+    type: custom
+    custom: stackone_repro
+    params: "~23M"
+
+  minilm-indirect-v1:
+    type: custom
+    custom: minilm_indirect_v1
+    params: "~23M"
+
+  minilm-indirect-v2:
+    type: custom
+    custom: minilm_indirect_v2
+    params: "~23M"
+
+  # Pattern detector (simple-defender Stage 1)
+  pattern-detector:
+    type: custom
+    custom: pattern_detector
+    params: "0"
+
+  # Traditional ML baselines (need training first via traditional_ml.py)
+  tfidf-lgbm:
+    type: custom
+    custom: tfidf_lgbm
+    params: "<1M"
+
+  tfidf-logreg:
+    type: custom
+    custom: tfidf_logreg
+    params: "<1M"
+
+  emb-logreg:
+    type: custom
+    custom: emb_logreg
+    params: "~23M"
+
+  emb-xgboost:
+    type: custom
+    custom: emb_xgboost
+    params: "~23M"
+
+# Composable pipelines: stage1 (fast filter) + stage2 (ML model)
+pipelines:
+  pattern+stackone:
+    stage1: pattern-detector
+    stage2: stackone-repro
+    params: "~23M"
+
+  pattern+minilm-v1:
+    stage1: pattern-detector
+    stage2: minilm-indirect-v1
+    params: "~23M"
+
+datasets:
+  # Direct injection (test partition only)
+  deepset-all:
+    desc: "deepset/prompt-injections (test ~200)"
+    loader: binary
+    hf_id: "deepset/prompt-injections"
+    test_only: true
+    category: direct
+
+  xTRam1:
+    desc: "xTRam1/safe-guard (test ~3K)"
+    loader: binary
+    hf_id: "xTRam1/safe-guard-prompt-injection"
+    test_only: true
+    category: direct
+
+  jailbreakbench:
+    desc: "JailbreakBench (200)"
+    loader: jailbreakbench
+    category: jailbreak
+
+  # Indirect injection
+  bipia:
+    desc: "BIPIA indirect injection (400)"
+    loader: bipia
+    category: indirect
+
+  notinject:
+    desc: "NotInject FPR-only (339 benign)"
+    loader: notinject
+    category: fpr
+
+  # Multi-attack / large-scale
+  xxz224:
+    desc: "xxz224 task-hijacking attacks (test ~6.7K)"
+    loader: xxz224
+    test_only: true
+    category: direct
+
+  jayavibhav:
+    desc: "jayavibhav prompt-injection test (65K)"
+    loader: binary
+    hf_id: "jayavibhav/prompt-injection"
+    split: test
+    category: direct
+
+  # Additional datasets from research
+  hackaprompt:
+    desc: "HackAPrompt competition (600K+ real attacks)"
+    loader: hackaprompt
+    category: direct
+    gated: true
+
+  harmbench:
+    desc: "HarmBench jailbreak behaviors (~400)"
+    loader: harmbench
+    category: jailbreak
+    gated: true  # needs format investigation
+
+  # --- Direct PI (new) ---
+  lakera-mosscap:
+    desc: "Lakera/mosscap DEF CON 31 Gandalf attacks (279K, capped 5K)"
+    loader: generic_hf
+    hf_id: "Lakera/mosscap_prompt_injection"
+    text_col: "prompt"
+    all_injection: true
+    max_samples: 5000
+    category: direct
+
+  lakera-gandalf:
+    desc: "Lakera/gandalf ignore-instructions subset (1K)"
+    loader: generic_hf
+    hf_id: "Lakera/gandalf_ignore_instructions"
+    text_col: "text"
+    all_injection: true
+    category: direct
+
+  spml-chatbot:
+    desc: "SPML Chatbot GPT-4 synthetic PI (16K, capped 5K)"
+    loader: generic_hf
+    hf_id: "reshabhs/SPML_Chatbot_Prompt_Injection"
+    text_col: "User Prompt"
+    label_col: "Prompt injection"
+    injection_label: 1
+    max_samples: 5000
+    category: direct
+
+  neuralchemy:
+    desc: "neuralchemy community PI dataset (1.7K)"
+    loader: generic_hf
+    hf_id: "neuralchemy/Prompt-injection-dataset"
+    text_col: "text"
+    label_col: "label"
+    injection_label: 1
+    category: direct
+
+  protectai-validation:
+    desc: "ProtectAI aggregated validation set (3.2K)"
+    loader: generic_hf
+    hf_id: "protectai/prompt-injection-validation"
+    text_col: "text"
+    label_col: "label"
+    injection_label: 1
+    category: direct
+
+  necent-multilingual:
+    desc: "Necent 26-language PI+jailbreak aggregated (691K, capped 5K)"
+    loader: generic_hf
+    hf_id: "Necent/llm-jailbreak-prompt-injection-dataset"
+    text_col: "prompt"
+    label_col: "is_dangerous"
+    injection_label: 1
+    max_samples: 5000
+    category: direct
+
+  sentinel-jailbreak:
+    desc: "Chgdz/sentinel jailbreak detection (51.6K, capped 5K)"
+    loader: generic_hf
+    hf_id: "Chgdz/sentinel-jailbreak-detection"
+    text_col: "user"
+    all_injection: true  # need to investigate format further
+    max_samples: 5000
+    category: jailbreak
+    gated: true  # deferred — needs format investigation
+
+  # --- Jailbreak (new) ---
+  in-the-wild-jailbreak:
+    desc: "TrustAIRLab in-the-wild jailbreaks CCS 2024 (21.5K, capped 5K)"
+    loader: in_the_wild_jailbreak
+    category: jailbreak
+
+  jailbreakhub:
+    desc: "walledai/JailbreakHub in-the-wild (15.1K, capped 5K)"
+    loader: generic_hf
+    hf_id: "walledai/JailbreakHub"
+    text_col: "prompt"
+    label_col: "jailbreak"
+    injection_label: true
+    max_samples: 5000
+    category: jailbreak
+
+  xstest:
+    desc: "XSTest over-refusal NAACL 2024 (450 safe+unsafe)"
+    loader: generic_hf
+    hf_id: "walledai/XSTest"
+    text_col: "prompt"
+    label_col: "label"
+    injection_label: "unsafe"
+    category: jailbreak
+    gated: true
+
+  hex-phi:
+    desc: "HEx-PHI harmful instructions ICLR 2024 (330)"
+    loader: generic_hf
+    hf_id: "LLM-Tuning-Safety/HEx-PHI"
+    text_col: "prompt"
+    all_injection: true
+    category: jailbreak
+    gated: true
+
+  wildguardtest:
+    desc: "walledai/WildGuardTest vanilla+adversarial (1.7K)"
+    loader: wildguardtest
+    category: jailbreak
+
+  semantic-router-jailbreak:
+    desc: "llm-semantic-router jailbreak detection (4.1K)"
+    loader: generic_hf
+    hf_id: "llm-semantic-router/jailbreak-detection-dataset"
+    text_col: "text"
+    label_col: "label"
+    injection_label: 1
+    category: jailbreak
+
+  # --- Safety / FPR (new) ---
+  aegis-safety:
+    desc: "NVIDIA Aegis 2.0 content safety (33.4K, capped 5K)"
+    loader: generic_hf
+    hf_id: "nvidia/Aegis-AI-Content-Safety-Dataset-2.0"
+    text_col: "prompt"
+    all_benign: true  # FPR test — safety content should not be flagged as injection
+    max_samples: 5000
+    category: safety
+
+  toxic-chat:
+    desc: "lmsys/toxic-chat real user prompts (10K+, capped 5K)"
+    loader: toxic_chat
+    category: safety
+
+  do-not-answer:
+    desc: "LibrAI/do-not-answer refusal prompts (939)"
+    loader: generic_hf
+    hf_id: "LibrAI/do-not-answer"
+    text_col: "question"
+    all_benign: true
+    category: fpr
+
+  or-bench:
+    desc: "OR-Bench over-refusal ICML 2025 (80K, capped 5K)"
+    loader: generic_hf
+    hf_id: "bench-llm/or-bench"
+    config_name: "or-bench-80k"
+    text_col: "prompt"
+    all_benign: true
+    max_samples: 5000
+    category: fpr
+
+  beavertails:
+    desc: "PKU BeaverTails harmful/safe QA (330K, capped 5K)"
+    loader: generic_hf
+    hf_id: "PKU-Alignment/BeaverTails"
+    text_col: "prompt"
+    all_benign: true  # FPR test
+    max_samples: 5000
+    category: safety
