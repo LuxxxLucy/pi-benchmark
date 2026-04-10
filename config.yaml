@@ -56,6 +56,7 @@ models:
     hf_id: "hlyn/prompt-injection-judge-deberta-70m"
     params: "70.8M"
     injection_labels: [1]
+    gated: true
 
   testsavantai-small:
     type: hf
@@ -105,7 +106,34 @@ models:
     params: "300M"
     injection_labels: [1]  # labels: 0=benign, 1=injection
 
+  # New models (2026-04 benchmark expansion)
+  vijil-dome:
+    type: hf
+    hf_id: "vijil/vijil_dome_prompt_injection_detection"
+    params: "150M"
+    injection_labels: [1]  # ModernBERT, id2label: {0: 0, 1: 1} — 1=injection by convention
+
+  expentor-jb:
+    type: hf
+    hf_id: "darrayes/expentor-JB-detector"
+    params: "~150M"
+    injection_labels: [1]  # labels: 0=benign, 1=jailbreak
+
   # Gated (need HF approval)
+  qualifire-sentinel:
+    type: hf
+    hf_id: "qualifire/prompt-injection-sentinel"
+    params: "395M"
+    injection_labels: [1]
+    gated: true
+
+  codeintegrity-promptguard:
+    type: hf
+    hf_id: "codeintegrity-ai/promptguard"
+    params: "~150M"
+    injection_labels: [1]
+    gated: true
+
   prompt-guard-22m:
     type: hf
     hf_id: "meta-llama/Llama-Prompt-Guard-2-22M"
@@ -325,7 +353,7 @@ datasets:
 
   # --- Jailbreak (new) ---
   in-the-wild-jailbreak:
-    desc: "TrustAIRLab in-the-wild jailbreaks CCS 2024 (21.5K, capped 5K)"
+    desc: "TrustAIRLab in-the-wild jailbreaks CCS 2024 (1.4K, all injection)"
     loader: in_the_wild_jailbreak
     category: jailbreak
 
@@ -413,3 +441,12 @@ datasets:
     all_benign: true  # FPR test
     max_samples: 5000
     category: safety
+
+  false-reject:
+    desc: "AmazonScience FalseReject over-refusal (1.2K test, 44 safety categories)"
+    loader: generic_hf
+    hf_id: "AmazonScience/FalseReject"
+    text_col: "prompt"
+    split: "test"
+    all_benign: true
+    category: fpr

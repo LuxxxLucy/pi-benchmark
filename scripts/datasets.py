@@ -1,31 +1,74 @@
-"""Dataset loading functions for prompt injection benchmarks."""
+"""Dataset loading with local disk cache.
+
+First load downloads from HuggingFace, processes, and caches to
+datasets/cached/{name}.json. Subsequent loads read from cache.
+Use --rebuild-cache to force re-download.
+"""
+import hashlib
 import json
 import random
-import sys
 from pathlib import Path
 
-from datasets import load_dataset
+CACHE_DIR = Path(__file__).parent.parent / "datasets" / "cached"
 
-# Import split utility for consistent train/test partitioning
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "indirect"))
-from split_utils import is_test_partition
 
+# ---------------------------------------------------------------------------
+# Deterministic split (inlined from split_utils.py to avoid cross-project dep)
+# ---------------------------------------------------------------------------
+
+def _is_test_partition(text: str, test_fraction: float = 0.3, seed: int = 42) -> bool:
+    """Deterministic hash-based split. Returns True if sample belongs to test set."""
+    h = hashlib.md5(f"{seed}:{text}".encode()).hexdigest()
+    return (int(h, 16) % 1000) < int(test_fraction * 1000)
+
+
+# ---------------------------------------------------------------------------
+# Cache helpers
+# ---------------------------------------------------------------------------
+
+def _cache_path(ds_name: str) -> Path:
+    return CACHE_DIR / f"{ds_name}.json"
+
+
+def _load_from_cache(ds_name: str) -> list[dict] | None:
+    path = _cache_path(ds_name)
+    if path.exists():
+        with open(path) as f:
+            samples = json.load(f)
+        print(f"  [{ds_name}] loaded {len(samples)} samples from cache")
+        return samples
+    return None
+
+
+def _save_to_cache(ds_name: str, samples: list[dict]):
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    with open(_cache_path(ds_name), "w") as f:
+        json.dump(samples, f)
+    print(f"  [{ds_name}] cached {len(samples)} samples → {_cache_path(ds_name)}")
+
+
+# ---------------------------------------------------------------------------
+# HuggingFace loaders
+# ---------------------------------------------------------------------------
 
 def _load_binary(hf_id, text_col="text", label_col="label", injection_label=1,
                  split=None, test_only=False):
+    from datasets import load_dataset
     if split:
         ds = load_dataset(hf_id, split=split)
         rows = list(ds)
     else:
         ds = load_dataset(hf_id)
         rows = [r for s in ds for r in ds[s]]
-    samples = [{"text": r[text_col], "is_injection": r[label_col] == injection_label} for r in rows]
+    samples = [{"text": r[text_col], "is_injection": r[label_col] == injection_label}
+               for r in rows]
     if test_only:
-        samples = [s for s in samples if is_test_partition(s["text"])]
+        samples = [s for s in samples if _is_test_partition(s["text"])]
     return samples
 
 
 def _load_jailbreakbench():
+    from datasets import load_dataset
     ds = load_dataset("JailbreakBench/JBB-Behaviors", "behaviors")
     return ([{"text": r["Goal"], "is_injection": True} for r in ds["harmful"]] +
             [{"text": r["Goal"], "is_injection": False} for r in ds["benign"]])
@@ -37,7 +80,7 @@ def _load_bipia():
     Generates poisoned samples by inserting attack strings into benign contexts.
     Uses a fixed seed for reproducibility.
     """
-    bipia_dir = Path(__file__).parent.parent.parent / "indirect" / "bipia_repo" / "benchmark"
+    bipia_dir = Path(__file__).parent.parent / "datasets" / "bipia_repo" / "benchmark"
 
     with open(bipia_dir / "text_attack_test.json") as f:
         attacks_raw = json.load(f)
@@ -45,7 +88,7 @@ def _load_bipia():
     for variants in attacks_raw.values():
         attacks.extend(variants)
 
-    rng = random.Random(42)  # Fixed seed for reproducibility
+    rng = random.Random(42)
     samples = []
     for category in ["email", "code", "table"]:
         cat_dir = bipia_dir / category
@@ -70,7 +113,8 @@ def _load_bipia():
 
 
 def _load_xxz224(test_only=False):
-    """Load xxz224 prompt-injection-attack-dataset (~3747 rows)."""
+    """Load xxz224 prompt-injection-attack-dataset."""
+    from datasets import load_dataset
     ds = load_dataset("xxz224/prompt-injection-attack-dataset", split="train")
     attack_cols = ["naive_attack", "escape_attack", "ignore_attack",
                    "fake_comp_attack", "combine_attack"]
@@ -84,12 +128,13 @@ def _load_xxz224(test_only=False):
         for col in attack_cols:
             samples.append({"text": r[col], "is_injection": True})
     if test_only:
-        samples = [s for s in samples if is_test_partition(s["text"])]
+        samples = [s for s in samples if _is_test_partition(s["text"])]
     return samples
 
 
 def _load_notinject():
     """Load NotInject dataset — benign prompts with trigger words (FPR test)."""
+    from datasets import load_dataset
     ds = load_dataset("leolee99/NotInject")
     samples = []
     for split in ds:
@@ -100,24 +145,20 @@ def _load_notinject():
 
 def _load_hackaprompt():
     """Load HackAPrompt competition dataset — real attack submissions."""
+    from datasets import load_dataset
     ds = load_dataset("hackaprompt/hackaprompt-dataset", split="train")
     samples = []
     for r in ds:
         prompt = r.get("user_input", "")
         if not prompt or len(prompt.strip()) < 10:
             continue
-        # All submissions are attack attempts
         samples.append({"text": prompt, "is_injection": True})
-    # Cap at 5000 to keep benchmark tractable
-    if len(samples) > 5000:
-        import random
-        rng = random.Random(42)
-        samples = rng.sample(samples, 5000)
     return samples
 
 
 def _load_harmbench():
     """Load HarmBench jailbreak behaviors."""
+    from datasets import load_dataset
     ds = load_dataset("walledai/HarmBench", split="train")
     samples = []
     for r in ds:
@@ -131,16 +172,11 @@ def _load_generic_hf(ds_cfg: dict) -> list[dict]:
     """Generic HuggingFace dataset loader driven by config fields.
 
     Config fields:
-      hf_id: HuggingFace dataset ID
-      text_col: column name for text (default: "text")
-      label_col: column name for label (optional — if absent, all samples are injection or benign per all_injection/all_benign)
-      injection_label: value in label_col that means injection (default: 1)
-      all_injection: if true, all samples are injection (no label_col needed)
-      all_benign: if true, all samples are benign (FPR test)
-      split: HF split to load (default: "train")
-      config_name: HF dataset config name (optional)
-      max_samples: cap sample count (default: 5000 for large datasets)
+      hf_id, text_col, label_col, injection_label,
+      all_injection, all_benign, split, config_name, max_samples
     """
+    from datasets import load_dataset
+
     hf_id = ds_cfg["hf_id"]
     text_col = ds_cfg.get("text_col", "text")
     label_col = ds_cfg.get("label_col")
@@ -149,7 +185,7 @@ def _load_generic_hf(ds_cfg: dict) -> list[dict]:
     all_benign = ds_cfg.get("all_benign", False)
     split = ds_cfg.get("split", "train")
     config_name = ds_cfg.get("config_name")
-    max_samples = ds_cfg.get("max_samples", 5000)
+    max_samples = ds_cfg.get("max_samples")
 
     if config_name:
         ds = load_dataset(hf_id, config_name, split=split)
@@ -157,7 +193,6 @@ def _load_generic_hf(ds_cfg: dict) -> list[dict]:
         try:
             ds = load_dataset(hf_id, split=split)
         except Exception:
-            # Some datasets don't have a "train" split
             ds_full = load_dataset(hf_id)
             rows = [r for s in ds_full for r in ds_full[s]]
             ds = rows
@@ -188,6 +223,7 @@ def _load_generic_hf(ds_cfg: dict) -> list[dict]:
 
 def _load_toxic_chat() -> list[dict]:
     """Load lmsys/toxic-chat. Uses jailbreaking column as injection label."""
+    from datasets import load_dataset
     ds = load_dataset("lmsys/toxic-chat", "toxicchat0124", split="train")
     samples = []
     for r in ds:
@@ -196,30 +232,33 @@ def _load_toxic_chat() -> list[dict]:
             continue
         is_inj = bool(r.get("jailbreaking", 0))
         samples.append({"text": text, "is_injection": is_inj})
-    if len(samples) > 5000:
-        rng = random.Random(42)
-        samples = rng.sample(samples, 5000)
     return samples
 
 
 def _load_wildguardtest() -> list[dict]:
-    """Load walledai/WildGuardTest. Vanilla + adversarial prompts."""
+    """Load walledai/WildGuardTest. Vanilla + adversarial prompts.
+
+    Only uses the 'harmful' label — NOT the 'adversarial' flag, because
+    adversarial benign prompts (designed to look harmful but are safe)
+    should not be labeled as injection.
+    """
+    from datasets import load_dataset
     ds = load_dataset("walledai/WildGuardTest", split="train")
     samples = []
     for r in ds:
         text = r.get("prompt", "")
         if not text:
             continue
-        # "harmful" label = injection-like behavior
-        is_inj = r.get("label", "") == "harmful" or r.get("adversarial", False)
+        is_inj = r.get("label", "") == "harmful"
         samples.append({"text": text, "is_injection": is_inj})
     return samples
 
 
 def _load_in_the_wild_jailbreak() -> list[dict]:
     """Load TrustAIRLab/in-the-wild-jailbreak-prompts. CCS 2024."""
+    from datasets import load_dataset
     ds = load_dataset("TrustAIRLab/in-the-wild-jailbreak-prompts",
-                       "jailbreak_2023_12_25", split="train")
+                      "jailbreak_2023_12_25", split="train")
     samples = []
     for r in ds:
         text = r.get("prompt", "")
@@ -227,41 +266,57 @@ def _load_in_the_wild_jailbreak() -> list[dict]:
             continue
         is_inj = bool(r.get("jailbreak", False))
         samples.append({"text": text, "is_injection": is_inj})
-    if len(samples) > 5000:
-        rng = random.Random(42)
-        samples = rng.sample(samples, 5000)
     return samples
 
 
-def load_dataset_samples(ds_name: str, ds_cfg: dict) -> list[dict]:
-    """Load dataset samples from config entry."""
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
+
+def load_dataset_samples(ds_name: str, ds_cfg: dict,
+                         rebuild_cache: bool = False) -> list[dict]:
+    """Load dataset samples, using local cache when available.
+
+    First call downloads from HuggingFace, processes, and caches to disk.
+    Subsequent calls load from cache (fast, no network).
+    Pass rebuild_cache=True to force re-download.
+    """
+    if not rebuild_cache:
+        cached = _load_from_cache(ds_name)
+        if cached is not None:
+            return cached
+
+    print(f"  [{ds_name}] downloading from HuggingFace...")
     loader = ds_cfg["loader"]
 
     if loader == "binary":
-        return _load_binary(
+        samples = _load_binary(
             ds_cfg["hf_id"],
             split=ds_cfg.get("split"),
             test_only=ds_cfg.get("test_only", False),
         )
     elif loader == "generic_hf":
-        return _load_generic_hf(ds_cfg)
+        samples = _load_generic_hf(ds_cfg)
     elif loader == "jailbreakbench":
-        return _load_jailbreakbench()
+        samples = _load_jailbreakbench()
     elif loader == "bipia":
-        return _load_bipia()
+        samples = _load_bipia()
     elif loader == "xxz224":
-        return _load_xxz224(test_only=ds_cfg.get("test_only", False))
+        samples = _load_xxz224(test_only=ds_cfg.get("test_only", False))
     elif loader == "notinject":
-        return _load_notinject()
+        samples = _load_notinject()
     elif loader == "hackaprompt":
-        return _load_hackaprompt()
+        samples = _load_hackaprompt()
     elif loader == "harmbench":
-        return _load_harmbench()
+        samples = _load_harmbench()
     elif loader == "toxic_chat":
-        return _load_toxic_chat()
+        samples = _load_toxic_chat()
     elif loader == "wildguardtest":
-        return _load_wildguardtest()
+        samples = _load_wildguardtest()
     elif loader == "in_the_wild_jailbreak":
-        return _load_in_the_wild_jailbreak()
+        samples = _load_in_the_wild_jailbreak()
     else:
         raise ValueError(f"Unknown dataset loader '{loader}' for {ds_name}")
+
+    _save_to_cache(ds_name, samples)
+    return samples

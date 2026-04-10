@@ -1,6 +1,8 @@
 """Classifier loading: HuggingFace, custom, pattern-detector, and pipelines."""
-import sys
+import importlib.util
 import time
+import json
+import shutil
 from pathlib import Path
 from typing import Callable
 
@@ -12,60 +14,150 @@ ClassifierFn = Callable[[str], tuple[bool, float]]
 INJECTION_LABEL_NAMES = {"injection", "prompt_injection", "jailbreak", "unsafe", "malicious", "harmful"}
 SAFE_LABEL_NAMES = {"safe", "benign", "normal", "legitimate"}
 
+MODELS_DIR = Path(__file__).parent.parent / "models"
+
+# Base tokenizer for ModernBERT models that don't ship their own
+MODERNBERT_TOKENIZER = "answerdotai/ModernBERT-base"
+
 
 # ---------------------------------------------------------------------------
-# HuggingFace models
+# Module import helper (replaces sys.path mutation)
 # ---------------------------------------------------------------------------
 
-def _load_hf_model(hf_id: str):
-    """Load HF model, handling _orig_mod. prefix from torch.compile()."""
-    from safetensors.torch import load_file
-    from huggingface_hub import hf_hub_download
-    from transformers import AutoConfig
+def _import_module_from_file(module_name: str, file_path: Path):
+    """Import a Python module from an absolute file path without mutating sys.path."""
+    spec = importlib.util.spec_from_file_location(module_name, file_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
-    config = AutoConfig.from_pretrained(hf_id)
-    try:
-        wf = hf_hub_download(hf_id, "model.safetensors")
-        raw_sd = load_file(wf)
-    except Exception:
-        wf = hf_hub_download(hf_id, "pytorch_model.bin")
-        raw_sd = torch.load(wf, map_location="cpu", weights_only=True)
 
-    if any(k.startswith("_orig_mod.") for k in raw_sd):
-        raw_sd = {k.replace("_orig_mod.", ""): v for k, v in raw_sd.items()}
-        print(f"  (stripped _orig_mod. prefix)")
+# ---------------------------------------------------------------------------
+# HuggingFace models — download to local models/ dir
+# ---------------------------------------------------------------------------
 
-    model = AutoModelForSequenceClassification.from_config(config)
-    model.load_state_dict(raw_sd, strict=False)
+def _ensure_local_model(hf_id: str) -> Path:
+    """Download HF model to local models/ directory if not already present.
+
+    Also fixes known issues (malformed id2label, missing tokenizer files).
+    Returns the local directory path.
+    """
+    from huggingface_hub import snapshot_download
+
+    local_name = hf_id.replace("/", "--")
+    local_dir = MODELS_DIR / local_name
+
+    if local_dir.exists() and (local_dir / "config.json").exists():
+        return local_dir
+
+    print(f"  Downloading {hf_id} to {local_dir}...")
+    cache_dir = snapshot_download(hf_id)
+
+    local_dir.mkdir(parents=True, exist_ok=True)
+    for f in Path(cache_dir).iterdir():
+        if f.is_file():
+            shutil.copy2(f, local_dir / f.name)
+
+    # Fix malformed id2label (e.g., vijil-dome has int values)
+    cfg_path = local_dir / "config.json"
+    if cfg_path.exists():
+        with open(cfg_path) as f:
+            cfg = json.load(f)
+        needs_fix = False
+        if "id2label" in cfg:
+            for v in cfg["id2label"].values():
+                if not isinstance(v, str):
+                    needs_fix = True
+                    break
+        if needs_fix:
+            label_names = {0: "benign", 1: "injection"}
+            cfg["id2label"] = {k: label_names.get(int(k), str(v)) for k, v in cfg["id2label"].items()}
+            cfg["label2id"] = {v: int(k) for k, v in cfg["id2label"].items()}
+            with open(cfg_path, "w") as f:
+                json.dump(cfg, f, indent=2)
+            print(f"  (fixed malformed id2label)")
+
+    # Check if tokenizer files exist; if not, copy from base model
+    tok_files = ["tokenizer.json", "tokenizer_config.json", "special_tokens_map.json"]
+    has_tokenizer = any((local_dir / tf).exists() for tf in tok_files)
+    if not has_tokenizer:
+        if cfg_path.exists():
+            with open(cfg_path) as f:
+                cfg = json.load(f)
+            model_type = cfg.get("model_type", "")
+            if model_type == "modernbert":
+                base_tok = MODERNBERT_TOKENIZER
+            else:
+                base_tok = cfg.get("_name_or_path", "")
+
+            if base_tok:
+                print(f"  (copying tokenizer from base: {base_tok})")
+                base_cache = snapshot_download(base_tok)
+                for tf in tok_files + ["vocab.txt", "merges.txt", "sentencepiece.bpe.model"]:
+                    src = Path(base_cache) / tf
+                    if src.exists():
+                        shutil.copy2(src, local_dir / tf)
+
+    # Write README with provenance
+    readme = local_dir / "README.md"
+    if not readme.exists():
+        readme.write_text(
+            f"# {hf_id}\n\n"
+            f"Downloaded from: https://huggingface.co/{hf_id}\n\n"
+            f"Command: `snapshot_download(\"{hf_id}\")`\n"
+        )
+
+    return local_dir
+
+
+def _label_is_injection(label, injection_labels: list[int]) -> bool:
+    """Check if a pipeline output label means injection."""
+    if isinstance(label, str):
+        lower = label.lower()
+        if lower in INJECTION_LABEL_NAMES:
+            return True
+        if lower in SAFE_LABEL_NAMES:
+            return False
+        if label.startswith("LABEL_"):
+            return int(label.split("_")[1]) in injection_labels
+        return False
+    return int(label) in injection_labels
+
+
+def make_hf_classifier(hf_id: str, injection_labels: list[int],
+                       device: str = "cpu", batch_size: int = 1) -> ClassifierFn:
+    """Create a classifier function from a HuggingFace model.
+
+    Text truncation is handled by the tokenizer (max_length=512).
+    No character-level truncation — let the model see as much as the
+    tokenizer allows.
+    """
+    local_dir = _ensure_local_model(hf_id)
+
+    if device == "auto":
+        device = "mps" if torch.backends.mps.is_available() else "cpu"
+    dtype = torch.float16 if device == "mps" else torch.float32
+
+    model = AutoModelForSequenceClassification.from_pretrained(local_dir)
     model.eval()
-    return model
-
-
-def make_hf_classifier(hf_id: str, injection_labels: list[int]) -> ClassifierFn:
-    """Create a classifier function from a HuggingFace model."""
-    model = _load_hf_model(hf_id)
-    tokenizer = AutoTokenizer.from_pretrained(hf_id)
-    pipe = pipeline("text-classification", model=model, tokenizer=tokenizer, device="cpu", dtype=torch.float32)
+    tokenizer = AutoTokenizer.from_pretrained(local_dir)
+    pipe = pipeline("text-classification", model=model, tokenizer=tokenizer,
+                    device=device, dtype=dtype, batch_size=batch_size)
 
     def classify(text: str) -> tuple[bool, float]:
         t0 = time.perf_counter()
         try:
-            result = pipe(text[:2000], truncation=True, max_length=512)
+            result = pipe(text, truncation=True, max_length=512)
             elapsed = (time.perf_counter() - t0) * 1000
-            label = result[0]["label"]
-            if isinstance(label, str):
-                lower = label.lower()
-                if lower in INJECTION_LABEL_NAMES:
-                    return True, elapsed
-                if lower in SAFE_LABEL_NAMES:
-                    return False, elapsed
-                if label.startswith("LABEL_"):
-                    return int(label.split("_")[1]) in injection_labels, elapsed
-                return False, elapsed
-            return int(label) in injection_labels, elapsed
+            return _label_is_injection(result[0]["label"], injection_labels), elapsed
         except Exception:
             return False, (time.perf_counter() - t0) * 1000
 
+    def classify_batch(texts: list[str]) -> list[bool]:
+        results = pipe(texts, truncation=True, max_length=512)
+        return [_label_is_injection(r["label"], injection_labels) for r in results]
+
+    classify.batch = classify_batch
     return classify
 
 
@@ -79,56 +171,56 @@ def _load_custom_classifier(name: str) -> ClassifierFn:
     indirect_dir = Path(__file__).parent.parent.parent / "indirect"
 
     if name == "rule_based":
-        sys.path.insert(0, str(research_dir))
-        from rule_based_detector import detect
+        mod = _import_module_from_file("rule_based_detector",
+                                       research_dir / "rule_based_detector.py")
         def classify(text):
             t0 = time.perf_counter()
-            r = detect(text)
+            r = mod.detect(text)
             return r.is_injection, (time.perf_counter() - t0) * 1000
         return classify
 
     elif name == "hybrid":
-        sys.path.insert(0, str(research_dir))
-        from hybrid_classifier import classify as hybrid_classify
+        mod = _import_module_from_file("hybrid_classifier",
+                                       research_dir / "hybrid_classifier.py")
         def classify(text):
             t0 = time.perf_counter()
-            r = hybrid_classify(text)
+            r = mod.classify(text)
             return r, (time.perf_counter() - t0) * 1000
         return classify
 
     elif name == "embedding_knn":
-        sys.path.insert(0, str(research_dir))
-        from embedding_classifier import classify as emb_classify
+        mod = _import_module_from_file("embedding_classifier",
+                                       research_dir / "embedding_classifier.py")
         def classify(text):
             t0 = time.perf_counter()
-            r = emb_classify(text)
+            r = mod.classify(text)
             return r, (time.perf_counter() - t0) * 1000
         return classify
 
     elif name == "stackone_repro":
-        sys.path.insert(0, str(indirect_dir))
-        from stackone_python import classify as so_classify
+        mod = _import_module_from_file("stackone_python",
+                                       indirect_dir / "stackone_python.py")
         def classify(text):
             t0 = time.perf_counter()
-            r = so_classify(text)
+            r = mod.classify(text)
             return r, (time.perf_counter() - t0) * 1000
         return classify
 
     elif name == "minilm_indirect_v1":
-        sys.path.insert(0, str(indirect_dir))
-        from train_classifier import classify as mlm_classify
+        mod = _import_module_from_file("train_classifier",
+                                       indirect_dir / "train_classifier.py")
         def classify(text):
             t0 = time.perf_counter()
-            r = mlm_classify(text)
+            r = mod.classify(text)
             return r, (time.perf_counter() - t0) * 1000
         return classify
 
     elif name == "minilm_indirect_v2":
-        sys.path.insert(0, str(indirect_dir))
-        from train_v2 import classify as v2_classify
+        mod = _import_module_from_file("train_v2",
+                                       indirect_dir / "train_v2.py")
         def classify(text):
             t0 = time.perf_counter()
-            r = v2_classify(text)
+            r = mod.classify(text)
             return r, (time.perf_counter() - t0) * 1000
         return classify
 
@@ -145,7 +237,7 @@ def _load_custom_classifier(name: str) -> ClassifierFn:
     elif name.startswith("tfidf_"):
         from .traditional_ml import load_tfidf_classifier
         ml_method = name.replace("tfidf_", "")
-        model_dir = Path(__file__).parent.parent / "models" / f"tfidf-{ml_method}"
+        model_dir = MODELS_DIR / f"tfidf-{ml_method}"
         return load_tfidf_classifier(model_dir)
 
     elif name.startswith("emb_"):
@@ -153,7 +245,7 @@ def _load_custom_classifier(name: str) -> ClassifierFn:
         import pickle
         from sentence_transformers import SentenceTransformer
         ml_method = name.replace("emb_", "")
-        model_dir = Path(__file__).parent.parent / "models" / f"emb-{ml_method}"
+        model_dir = MODELS_DIR / f"emb-{ml_method}"
         embedder = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
         with open(model_dir / "model.pkl", "rb") as f:
             model = pickle.load(f)
@@ -181,12 +273,14 @@ def make_composed_classifier(stage1: ClassifierFn, stage2: ClassifierFn) -> Clas
 # Build classifier from config entry
 # ---------------------------------------------------------------------------
 
-def build_classifier(name: str, cfg: dict, all_models: dict) -> ClassifierFn:
+def build_classifier(name: str, cfg: dict, all_models: dict,
+                     device: str = "cpu", batch_size: int = 1) -> ClassifierFn:
     """Build a ClassifierFn from a model config entry."""
     model_type = cfg.get("type", "custom" if "custom" in cfg else "hf")
 
     if model_type == "hf":
-        return make_hf_classifier(cfg["hf_id"], cfg["injection_labels"])
+        return make_hf_classifier(cfg["hf_id"], cfg["injection_labels"],
+                                  device=device, batch_size=batch_size)
     elif model_type == "custom":
         return _load_custom_classifier(cfg["custom"])
     elif model_type == "pipeline":

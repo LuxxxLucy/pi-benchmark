@@ -1,6 +1,6 @@
 models/
 datasets/
-results/
+result/
 __pycache__/
 *.pyc
 .venv/
