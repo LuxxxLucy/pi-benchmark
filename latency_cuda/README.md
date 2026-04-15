@@ -7,10 +7,14 @@ Measures batch=1 forward-pass latency across token lengths for a curated list of
 ```bash
 uv sync                                 # install
 uv run python scripts/download.py       # pre-fetch all weights into HF cache
-bash run.sh                             # sweep all models × all lengths
+bash run.sh                             # CUDA pass + CPU pass, same machine
 ```
 
-Output lands in `results/latency_cuda.json` (one entry per model, nested per length).
+Outputs (one JSON per pass):
+- `results/latency_cuda.json`
+- `results/latency_cpu.json`
+
+Each file contains one entry per model, nested per length.
 
 ## Model list
 

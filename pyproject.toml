@@ -17,10 +17,13 @@ dependencies = [
     "simple-defender-py",
     "scikit-learn>=1.4",
     "lightgbm>=4.0",
+    "sentencepiece>=0.2.1",
 ]
 
 [tool.uv.sources]
-simple-defender-py = { path = "../../simple-defender/simple-defender-py" }
+# Public, Apache-2.0. Pinned to a specific commit so clones on other machines
+# resolve to the same artifact. Bump when upstream moves.
+simple-defender-py = { git = "https://github.com/LuxxxLucy/simple-defender-py", rev = "4c405f0" }
 
 [tool.hatch.build.targets.wheel]
 packages = ["scripts"]

@@ -17,22 +17,23 @@ LENGTHS="32 64 128 256 512 1024 2048 4096"
 # LENGTHS="32 64 128 256 512"       # shorter — fast smoke
 # LENGTHS="32 64 128 256 512 1024 2048 4096 8192"  # push past BERT's 512 cap
 
-# --- All candidates (PI-trained + arch-baselines) in one sweep ---
-uv run python src/bench.py --lengths $LENGTHS
+# --- CUDA pass (default on Ubuntu/CUDA) ---
+uv run python src/bench.py --device cuda --lengths $LENGTHS \
+                            --out results/latency_cuda.json
+
+# --- CPU pass (same machine; PyTorch uses threading-controlled CPU kernels) ---
+uv run python src/bench.py --device cpu  --lengths $LENGTHS \
+                            --out results/latency_cpu.json
 
 # --- Or split by group (separate output files) ---
-# uv run python src/bench.py --models pi-trained    --lengths $LENGTHS \
+# uv run python src/bench.py --device cuda --models pi-trained    --lengths $LENGTHS \
 #                             --out results/latency_cuda_pi-trained.json
-# uv run python src/bench.py --models arch-baseline --lengths $LENGTHS \
+# uv run python src/bench.py --device cuda --models arch-baseline --lengths $LENGTHS \
 #                             --out results/latency_cuda_arch-baseline.json
 
-# --- Ad-hoc subsets — edit this list to pick specific models ---
-# uv run python src/bench.py \
+# --- Ad-hoc subsets — edit the --models list to pick specific candidates ---
+# uv run python src/bench.py --device cuda \
 #     --models bert-tiny,minilm-L6-H384,fmops-distilbert,protectai-deberta-v2 \
 #     --lengths $LENGTHS
-
-# --- CPU comparison pass (same machine) ---
-# uv run python src/bench.py --device cpu --lengths $LENGTHS \
-#                             --out results/latency_cpu.json
 
 echo "[run] done. Results in $(pwd)/results/"
