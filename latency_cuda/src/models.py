@@ -22,6 +22,7 @@ class ModelSpec:
     family: str        # "minilm" | "distilbert" | "deberta" | "bert-tiny" | …
     group: str         # "pi-trained" | "arch-baseline"
     note: str = ""
+    trust_remote_code: bool = False   # needed for custom model_type (nomic_bert, NewModel, …)
 
 
 CANDIDATES: list[ModelSpec] = [
@@ -73,6 +74,55 @@ CANDIDATES: list[ModelSpec] = [
     ModelSpec("distilbert-base", "distilbert-base-uncased",
               "distilbert", "arch-baseline",
               "DistilBERT reference, 66M"),
+
+    # ── Classic lightweight variants (random head — arch-baseline) ─────────
+    ModelSpec("bert-L4-H512", "google/bert_uncased_L-4_H-512_A-8",
+              "bert-tiny", "arch-baseline",
+              "Google tiny BERT family, 29M (4L-512H); ships tokenizer.json "
+              "so no sentencepiece/tiktoken convert required"),
+    ModelSpec("albert-base-v2", "albert/albert-base-v2",
+              "albert", "arch-baseline",
+              "ALBERT-base, 12M raw / 12-layer shared weights — param count "
+              "≠ compute; isolates parameter-sharing latency"),
+    ModelSpec("electra-small", "google/electra-small-discriminator",
+              "electra", "arch-baseline",
+              "ELECTRA-small discriminator, 14M; factorized embedding"),
+    ModelSpec("mobilebert", "google/mobilebert-uncased",
+              "mobilebert", "arch-baseline",
+              "MobileBERT, 25M; 24L deep-narrow inverted-bottleneck — tests "
+              "depth-vs-width at batch=1"),
+
+    # ── Embedding-backbone fillers (random seq_cls head — arch-baseline) ───
+    ModelSpec("bge-micro-v2", "TaylorAI/bge-micro-v2",
+              "bert-tiny", "arch-baseline",
+              "BGE micro, 17M; BERT 3L-384H — fills 3-layer cell "
+              "(published by TaylorAI, not BAAI)"),
+    ModelSpec("bge-small-en-v1.5", "BAAI/bge-small-en-v1.5",
+              "minilm", "arch-baseline",
+              "BGE small EN, 33M; BERT 12L-384H"),
+
+    # ── Modern / long-context encoders (2024-25 SOTA) ──────────────────────
+    ModelSpec("modernbert-base", "answerdotai/ModernBERT-base",
+              "modernbert", "arch-baseline",
+              "ModernBERT-base, 149M, max_pos=8192; RoPE + GeGLU + "
+              "local/global attention; flagship 2024 modern encoder"),
+    ModelSpec("ettin-encoder-150m", "jhu-clsp/ettin-encoder-150m",
+              "modernbert", "arch-baseline",
+              "Ettin encoder-150m, 150M, max_pos=8192; ModernBERT-compatible, "
+              "fully open-recipe (2025)"),
+    ModelSpec("gte-base-en-v1.5", "Alibaba-NLP/gte-base-en-v1.5",
+              "new", "arch-baseline",
+              "GTE-base EN v1.5, 137M, max_pos=8192; custom NewModel type "
+              "(RoPE θ=500k); requires trust_remote_code AND the explicit "
+              "position_ids arange that bench_common.make_input now always "
+              "passes (its modeling.py indexes an uninitialized buffer "
+              "otherwise)",
+              trust_remote_code=True),
+    # nomic-ai/nomic-embed-text-v1.5 deferred: its custom modeling.py assumes
+    # config.classifier_dropout is not None AND loads state_dict with
+    # strict=True, so a random-head arch-baseline load fails on missing
+    # classifier + pooler weights. Revisit if we want 137M long-context
+    # nomic_bert numbers; would need a per-model loader branch.
 ]
 
 

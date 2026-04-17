@@ -12,6 +12,14 @@ bash run.sh                             # syncs deps, pre-fetches weights, runs 
 so stale venvs or cold HF caches do not silently skew `load_time_s` or
 break on tokenizer-convert deps.
 
+To verify a new `ModelSpec(...)` entry loads and forwards before
+running the full CUDA bench:
+
+```bash
+uv run python scripts/smoke_test.py                                  # all models
+uv run python scripts/smoke_test.py --models modernbert-base,nomic-embed-v1.5
+```
+
 Outputs (one JSON per pass):
 - `results/latency_cuda.json`
 - `results/latency_cpu.json`

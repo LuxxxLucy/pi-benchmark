@@ -23,7 +23,10 @@ from models import CANDIDATES  # noqa: E402
 
 _TOKENIZER_PATTERNS = [
     "config.json",
+    "configuration_*.py",           # custom model type (trust_remote_code)
+    "modeling_*.py",                # custom model type (trust_remote_code)
     "tokenizer*",
+    "tokenization_*.py",            # custom tokenizer (trust_remote_code)
     "special_tokens_map.json",
     "vocab.*",
     "merges.txt",

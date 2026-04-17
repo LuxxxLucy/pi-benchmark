@@ -72,8 +72,11 @@ def bench_one(spec: ModelSpec, device: str, lengths: list[int],
     dtype = pick_dtype(device)
 
     t0 = time.perf_counter()
+    trc = spec.trust_remote_code
     try:
-        tokenizer = AutoTokenizer.from_pretrained(spec.hf_id, use_fast=True)
+        tokenizer = AutoTokenizer.from_pretrained(
+            spec.hf_id, use_fast=True, trust_remote_code=trc,
+        )
     except ValueError as e:
         # Some older BERT repos (e.g. prajjwal1/bert-tiny, bert-mini) ship
         # only vocab.txt. The slow->fast converter tries to import
@@ -81,9 +84,11 @@ def bench_one(spec: ModelSpec, device: str, lengths: list[int],
         # slow tokenizer avoids the convert path entirely.
         print(f"  [slow-tokenizer] use_fast=True failed ({e.__class__.__name__}); "
               f"retrying with use_fast=False")
-        tokenizer = AutoTokenizer.from_pretrained(spec.hf_id, use_fast=False)
+        tokenizer = AutoTokenizer.from_pretrained(
+            spec.hf_id, use_fast=False, trust_remote_code=trc,
+        )
     model = AutoModelForSequenceClassification.from_pretrained(
-        spec.hf_id, dtype=dtype,
+        spec.hf_id, dtype=dtype, trust_remote_code=trc,
     ).to(device).eval()
     load_s = time.perf_counter() - t0
 
