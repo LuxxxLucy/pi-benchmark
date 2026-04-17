@@ -5,14 +5,19 @@ Measures batch=1 forward-pass latency across token lengths for a curated list of
 ## Quickstart
 
 ```bash
-uv sync                                 # install
-uv run python scripts/download.py       # pre-fetch all weights into HF cache
-bash run.sh                             # CUDA pass + CPU pass, same machine
+bash run.sh                             # syncs deps, pre-fetches weights, runs CUDA + CPU pass
 ```
+
+`run.sh` calls `uv sync` and `scripts/download.py` before the benchmark
+so stale venvs or cold HF caches do not silently skew `load_time_s` or
+break on tokenizer-convert deps.
 
 Outputs (one JSON per pass):
 - `results/latency_cuda.json`
 - `results/latency_cpu.json`
+
+See [REPORT.md](REPORT.md) for the 3090 narrative — GPU and CPU numbers
+from the 2026-04-16 run, script-issue callouts, and unresolved TODOs.
 
 Each file contains one entry per model, nested per length.
 

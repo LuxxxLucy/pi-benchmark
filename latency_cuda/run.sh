@@ -1,17 +1,21 @@
 #!/usr/bin/env bash
 # Lightweight-classifier latency bench on Linux + CUDA.
 #
-# Usage:
-#   1. uv sync                                  # first time only
-#   2. uv run python scripts/download.py        # pre-fetch all weights
-#   3. bash run.sh                              # uncommented combos run
-#
-# Outputs: one JSON under results/ per invocation.
+# Outputs: one JSON under results/ per invocation (latency_cuda.json, latency_cpu.json).
 
 set -euo pipefail
 cd "$(dirname "$0")"
 export PYTHONUNBUFFERED=1
 export PYTHONPATH="$(pwd)/src:${PYTHONPATH:-}"
+
+# Step 0: sync deps. Cheap no-op if the venv is already in sync; required
+# after any pyproject.toml change. Skipping this was the root cause of the
+# bert-tiny/bert-mini tokenizer-convert failure in the 2026-04-16 run.
+uv sync
+
+# Step 1: pre-fetch HF weights so mid-bench downloads don't pollute load_time_s.
+# Idempotent — skips files already in the HF cache.
+uv run python scripts/download.py
 
 LENGTHS="32 64 128 256 512 1024 2048 4096"
 # LENGTHS="32 64 128 256 512"       # shorter — fast smoke

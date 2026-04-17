@@ -1,0 +1,267 @@
+# RTX 3090 latency bench — raw stdout
+# ran: 2026-04-16, box: Linux-6.8.0-106-generic-x86_64-with-glibc2.35, torch 2.6.0+cu124
+# two passes: CUDA bf16, then CPU fp32. Both share the same box.
+# bert-tiny + bert-mini failed tokenizer load (sentencepiece/tiktoken convert path); fix shipped.
+# `actual 522 > 512` at len=512 is a cosmetic pre-truncation warning; shape is 512 post-truncate.
+
+=== CUDA pass ===
+env: {
+  "platform": "Linux-6.8.0-106-generic-x86_64-with-glibc2.35",
+  "torch": "2.6.0+cu124",
+  "cuda": "12.4",
+  "device": "cuda",
+  "gpu_name": "NVIDIA GeForce RTX 3090",
+  "dtype": "bfloat16",
+  "lengths": [32, 64, 128, 256, 512, 1024, 2048, 4096],
+  "warmup_iters": 10,
+  "measure_iters": 50
+}
+
+=== testsavantai-tiny  (testsavantai/prompt-injection-defender-tiny-v0)  [minilm / pi-trained] ===
+  loaded 1.6s — 4.4M params, max_pos=512, dtype=torch.bfloat16
+  skipping lengths > max_pos=512: [1024, 2048, 4096]
+  len=   32 (actual    32): p50=   4.88ms  p95=   4.92ms  mean=   4.86ms  thr= 205.8 rps
+  len=   64 (actual    64): p50=   2.35ms  p95=   7.94ms  mean=   3.43ms  thr= 291.3 rps
+  len=  128 (actual   128): p50=   4.87ms  p95=   4.92ms  mean=   4.88ms  thr= 204.9 rps
+  len=  256 (actual   256): p50=   4.89ms  p95=   9.16ms  mean=   5.53ms  thr= 180.9 rps
+  len=  512 (actual   512): p50=   4.90ms  p95=   4.92ms  mean=   4.89ms  thr= 204.4 rps
+
+=== testsavantai-small  (testsavantai/prompt-injection-defender-small-v0)  [minilm / pi-trained] ===
+  loaded 1.0s — 28.8M params, max_pos=512, dtype=torch.bfloat16
+  len=   32 (actual    32): p50=   2.05ms  p95=   4.94ms  mean=   3.30ms  thr= 303.3 rps
+  len=   64 (actual    64): p50=   1.90ms  p95=   4.94ms  mean=   2.89ms  thr= 345.6 rps
+  len=  128 (actual   128): p50=   1.97ms  p95=   4.97ms  mean=   2.95ms  thr= 339.2 rps
+  len=  256 (actual   256): p50=   1.92ms  p95=   5.04ms  mean=   2.84ms  thr= 352.2 rps
+  len=  512 (actual   512): p50=   1.76ms  p95=   5.18ms  mean=   2.70ms  thr= 370.0 rps
+
+=== testsavantai-medium  (testsavantai/prompt-injection-defender-medium-v0)  [deberta / pi-trained] ===
+  loaded 1.1s — 41.4M params, max_pos=512, dtype=torch.bfloat16
+  len=   32 (actual    32): p50=   4.96ms  p95=   7.38ms  mean=   4.57ms  thr= 218.7 rps
+  len=   64 (actual    64): p50=   4.44ms  p95=   5.61ms  mean=   4.19ms  thr= 238.7 rps
+  len=  128 (actual   128): p50=   4.69ms  p95=   6.03ms  mean=   4.31ms  thr= 232.2 rps
+  len=  256 (actual   256): p50=   5.08ms  p95=   5.97ms  mean=   4.51ms  thr= 221.9 rps
+  len=  512 (actual   512): p50=   4.38ms  p95=   5.71ms  mean=   4.34ms  thr= 230.3 rps
+
+=== testsavantai-base  (testsavantai/prompt-injection-defender-base-v0)  [deberta / pi-trained] ===
+  loaded 1.2s — 67.0M params, max_pos=512, dtype=torch.bfloat16
+  len=   32 (actual    32): p50=   2.95ms  p95=   5.18ms  mean=   3.57ms  thr= 279.9 rps
+  len=   64 (actual    64): p50=   3.08ms  p95=   5.17ms  mean=   3.59ms  thr= 278.8 rps
+  len=  128 (actual   128): p50=   2.41ms  p95=   5.37ms  mean=   3.27ms  thr= 305.5 rps
+  len=  256 (actual   256): p50=   2.57ms  p95=   5.54ms  mean=   3.72ms  thr= 268.7 rps
+  len=  512 (actual   512): p50=   2.33ms  p95=   6.11ms  mean=   3.42ms  thr= 292.6 rps
+
+=== fmops-distilbert  (fmops/distilbert-prompt-injection)  [distilbert / pi-trained] ===
+  loaded 1.2s — 67.0M params, max_pos=512, dtype=torch.bfloat16
+  len=   32 (actual    32): p50=   2.26ms  p95=   5.17ms  mean=   3.32ms  thr= 301.6 rps
+  len=   64 (actual    64): p50=   2.93ms  p95=   5.18ms  mean=   3.55ms  thr= 281.4 rps
+  len=  128 (actual   128): p50=   2.39ms  p95=   5.36ms  mean=   3.26ms  thr= 306.3 rps
+  len=  256 (actual   256): p50=   2.24ms  p95=   5.55ms  mean=   3.19ms  thr= 313.8 rps
+  len=  512 (actual   512): p50=   2.17ms  p95=   6.13ms  mean=   2.67ms  thr= 375.2 rps
+
+=== protectai-deberta-v2  (protectai/deberta-v3-base-prompt-injection-v2)  [deberta / pi-trained] ===
+  loaded 1.8s — 184.4M params, max_pos=512, dtype=torch.bfloat16
+  len=   32 (actual    32): p50=  12.72ms  p95=  15.52ms  mean=  12.81ms  thr=  78.1 rps
+  len=   64 (actual    64): p50=  12.12ms  p95=  14.47ms  mean=  12.39ms  thr=  80.7 rps
+  len=  128 (actual   128): p50=  13.47ms  p95=  16.72ms  mean=  13.71ms  thr=  72.9 rps
+  len=  256 (actual   256): p50=  12.59ms  p95=  14.54ms  mean=  12.28ms  thr=  81.4 rps
+  len=  512 (actual   512): p50=  11.02ms  p95=  19.11ms  mean=  13.61ms  thr=  73.5 rps
+
+=== deepset-deberta-injection  (deepset/deberta-v3-base-injection)  [deberta / pi-trained] ===
+  loaded 757.7s — 184.4M params, max_pos=512, dtype=torch.bfloat16  (includes HF download)
+  len=   32 (actual    32): p50=  12.41ms  p95=  13.83ms  mean=  11.93ms  thr=  83.8 rps
+  len=   64 (actual    64): p50=  12.39ms  p95=  13.89ms  mean=  11.99ms  thr=  83.4 rps
+  len=  128 (actual   128): p50=  11.89ms  p95=  14.40ms  mean=  12.01ms  thr=  83.3 rps
+  len=  256 (actual   256): p50=  12.12ms  p95=  13.69ms  mean=  11.72ms  thr=  85.3 rps
+  len=  512 (actual   512): p50=  10.29ms  p95=  19.04ms  mean=  13.20ms  thr=  75.8 rps
+
+=== bert-tiny  (prajjwal1/bert-tiny)  [bert-tiny / arch-baseline] ===
+FAIL bert-tiny: Couldn't instantiate the backend tokenizer (needs sentencepiece/tiktoken
+to convert slow→fast; repo ships only vocab.txt).
+
+=== bert-mini  (prajjwal1/bert-mini)  [bert-tiny / arch-baseline] ===
+FAIL bert-mini: same as bert-tiny.
+
+=== bert-L4-H256  (google/bert_uncased_L-4_H-256_A-4)  [bert-tiny / arch-baseline] ===
+  loaded 96.8s — 11.2M params, max_pos=512, dtype=torch.bfloat16  (download-inclusive)
+  [random classifier head — latency-only baseline]
+  len=   32 (actual    32): p50=   1.91ms  p95=   4.87ms  mean=   3.20ms  thr= 312.5 rps
+  len=   64 (actual    64): p50=   1.70ms  p95=   4.91ms  mean=   2.70ms  thr= 370.1 rps
+  len=  128 (actual   128): p50=   2.03ms  p95=   4.91ms  mean=   3.00ms  thr= 333.7 rps
+  len=  256 (actual   256): p50=   1.72ms  p95=   4.96ms  mean=   2.78ms  thr= 359.5 rps
+  len=  512 (actual   512): p50=   1.73ms  p95=   4.98ms  mean=   2.77ms  thr= 361.2 rps
+
+=== minilm-L6-H384  (sentence-transformers/all-MiniLM-L6-v2)  [minilm / arch-baseline] ===
+  loaded 2.6s — 22.7M params, max_pos=512, dtype=torch.bfloat16
+  [random classifier head — latency-only baseline]
+  len=   32 (actual    32): p50=   4.41ms  p95=   4.98ms  mean=   3.72ms  thr= 268.6 rps
+  len=   64 (actual    64): p50=   4.19ms  p95=   5.06ms  mean=   3.81ms  thr= 262.7 rps
+  len=  128 (actual   128): p50=   4.34ms  p95=   5.59ms  mean=   3.79ms  thr= 264.1 rps
+  len=  256 (actual   256): p50=   3.02ms  p95=   5.16ms  mean=   3.56ms  thr= 280.7 rps
+  len=  512 (actual   512): p50=   2.24ms  p95=   5.35ms  mean=   3.51ms  thr= 284.8 rps
+
+=== minilm-L12-H384  (microsoft/MiniLM-L12-H384-uncased)  [minilm / arch-baseline] ===
+  loaded 170.9s — 33.4M params, max_pos=512, dtype=torch.bfloat16  (download-inclusive)
+  [random classifier head — latency-only baseline]
+  len=   32 (actual    32): p50=   5.61ms  p95=   7.64ms  mean=   5.85ms  thr= 171.0 rps
+  len=   64 (actual    64): p50=   5.51ms  p95=   7.72ms  mean=   5.73ms  thr= 174.4 rps
+  len=  128 (actual   128): p50=   5.69ms  p95=   7.78ms  mean=   5.79ms  thr= 172.7 rps
+  len=  256 (actual   256): p50=   4.34ms  p95=   7.95ms  mean=   5.60ms  thr= 178.7 rps
+  len=  512 (actual   512): p50=   4.17ms  p95=   8.26ms  mean=   5.32ms  thr= 188.1 rps
+
+=== deberta-v3-xsmall  (microsoft/deberta-v3-xsmall)  [deberta / arch-baseline] ===
+  loaded 461.7s — 70.8M params, max_pos=512, dtype=torch.bfloat16  (download-inclusive)
+  [random classifier head — latency-only baseline]
+  len=   32 (actual    32): p50=  12.62ms  p95=  14.54ms  mean=  12.31ms  thr=  81.2 rps
+  len=   64 (actual    64): p50=  12.45ms  p95=  13.44ms  mean=  12.04ms  thr=  83.1 rps
+  len=  128 (actual   128): p50=  11.38ms  p95=  13.51ms  mean=  11.71ms  thr=  85.4 rps
+  len=  256 (actual   256): p50=  12.35ms  p95=  14.14ms  mean=  12.19ms  thr=  82.0 rps
+  len=  512 (actual   512): p50=  12.87ms  p95=  14.72ms  mean=  12.30ms  thr=  81.3 rps
+
+=== deberta-v3-small  (microsoft/deberta-v3-small)  [deberta / arch-baseline] ===
+  loaded 820.0s — 141.9M params, max_pos=512, dtype=torch.bfloat16  (download-inclusive)
+  [random classifier head — latency-only baseline]
+  len=   32 (actual    32): p50=   6.47ms  p95=   9.70ms  mean=   6.98ms  thr= 143.3 rps
+  len=   64 (actual    64): p50=   7.83ms  p95=   9.77ms  mean=   7.33ms  thr= 136.4 rps
+  len=  128 (actual   128): p50=   7.54ms  p95=   9.41ms  mean=   7.22ms  thr= 138.6 rps
+  len=  256 (actual   256): p50=   6.42ms  p95=   8.83ms  mean=   7.13ms  thr= 140.3 rps
+  len=  512 (actual   512): p50=   5.74ms  p95=  10.70ms  mean=   6.84ms  thr= 146.2 rps
+
+=== distilbert-base  (distilbert-base-uncased)  [distilbert / arch-baseline] ===
+  loaded 773.0s — 67.0M params, max_pos=512, dtype=torch.bfloat16  (download-inclusive)
+  [random classifier head — latency-only baseline]
+  len=   32 (actual    32): p50=   2.34ms  p95=   5.18ms  mean=   3.53ms  thr= 282.9 rps
+  len=   64 (actual    64): p50=   3.54ms  p95=   5.68ms  mean=   3.76ms  thr= 265.7 rps
+  len=  128 (actual   128): p50=   2.47ms  p95=   5.36ms  mean=   3.64ms  thr= 275.0 rps
+  len=  256 (actual   256): p50=   2.10ms  p95=   5.53ms  mean=   2.94ms  thr= 340.7 rps
+  len=  512 (actual   512): p50=   2.17ms  p95=   6.16ms  mean=   3.39ms  thr= 295.4 rps
+
+Wrote results/latency_cuda.json (total 3153.0s)
+
+
+=== CPU pass (same box) ===
+env: {
+  "platform": "Linux-6.8.0-106-generic-x86_64-with-glibc2.35",
+  "torch": "2.6.0+cu124",
+  "cuda": null,
+  "device": "cpu",
+  "gpu_name": null,
+  "dtype": "float32",
+  "lengths": [32, 64, 128, 256, 512, 1024, 2048, 4096],
+  "warmup_iters": 10,
+  "measure_iters": 50
+}
+
+=== testsavantai-tiny ===
+  loaded 1.7s — 4.4M params, max_pos=512, dtype=torch.float32
+  len=   32 (actual    32): p50=   0.89ms  p95=   0.95ms  mean=   0.91ms  thr=1101.0 rps
+  len=   64 (actual    64): p50=   0.99ms  p95=   1.03ms  mean=   1.01ms  thr= 994.5 rps
+  len=  128 (actual   128): p50=   1.19ms  p95=   1.24ms  mean=   1.21ms  thr= 826.9 rps
+  len=  256 (actual   256): p50=   1.64ms  p95=   1.69ms  mean=   1.66ms  thr= 603.9 rps
+  len=  512 (actual   512): p50=   2.73ms  p95=   2.88ms  mean=   2.77ms  thr= 360.8 rps
+
+=== testsavantai-small ===
+  loaded 1.0s — 28.8M params, max_pos=512, dtype=torch.float32
+  len=   32 (actual    32): p50=   5.51ms  p95=   5.76ms  mean=   5.55ms  thr= 180.2 rps
+  len=   64 (actual    64): p50=   7.45ms  p95=   7.65ms  mean=   7.49ms  thr= 133.6 rps
+  len=  128 (actual   128): p50=  11.03ms  p95=  11.28ms  mean=  11.06ms  thr=  90.4 rps
+  len=  256 (actual   256): p50=  19.33ms  p95=  20.05ms  mean=  19.38ms  thr=  51.6 rps
+  len=  512 (actual   512): p50=  25.90ms  p95=  26.43ms  mean=  25.91ms  thr=  38.6 rps
+
+=== testsavantai-medium ===
+  loaded 1.2s — 41.4M params, max_pos=512, dtype=torch.float32
+  len=   32 (actual    32): p50=   9.83ms  p95=  10.69ms  mean=   9.89ms  thr= 101.1 rps
+  len=   64 (actual    64): p50=  11.46ms  p95=  12.86ms  mean=  11.66ms  thr=  85.7 rps
+  len=  128 (actual   128): p50=  21.55ms  p95=  21.89ms  mean=  19.61ms  thr=  51.0 rps
+  len=  256 (actual   256): p50=  26.10ms  p95=  26.51ms  mean=  26.13ms  thr=  38.3 rps
+  len=  512 (actual   512): p50=  51.84ms  p95=  55.33ms  mean=  52.36ms  thr=  19.1 rps
+
+=== testsavantai-base ===
+  loaded 1.5s — 67.0M params, max_pos=512, dtype=torch.float32
+  len=   32 (actual    32): p50=  14.73ms  p95=  15.33ms  mean=  14.44ms  thr=  69.3 rps
+  len=   64 (actual    64): p50=  22.84ms  p95=  24.70ms  mean=  21.27ms  thr=  47.0 rps
+  len=  128 (actual   128): p50=  24.19ms  p95=  24.56ms  mean=  24.16ms  thr=  41.4 rps
+  len=  256 (actual   256): p50=  39.83ms  p95=  40.41ms  mean=  39.84ms  thr=  25.1 rps
+  len=  512 (actual   512): p50=  77.89ms  p95=  79.58ms  mean=  78.52ms  thr=  12.7 rps
+
+=== fmops-distilbert ===
+  loaded 1.7s — 67.0M params, max_pos=512, dtype=torch.float32
+  len=   32 (actual    32): p50=  15.26ms  p95=  15.75ms  mean=  15.30ms  thr=  65.4 rps
+  len=   64 (actual    64): p50=  16.79ms  p95=  17.31ms  mean=  16.83ms  thr=  59.4 rps
+  len=  128 (actual   128): p50=  24.25ms  p95=  25.61ms  mean=  24.47ms  thr=  40.9 rps
+  len=  256 (actual   256): p50=  57.26ms  p95=  58.64ms  mean=  50.00ms  thr=  20.0 rps
+  len=  512 (actual   512): p50=  77.98ms  p95=  80.84ms  mean=  78.33ms  thr=  12.8 rps
+
+=== protectai-deberta-v2 ===
+  loaded 2.2s — 184.4M params, max_pos=512, dtype=torch.float32
+  len=   32 (actual    32): p50=  57.25ms  p95=  73.81ms  mean=  60.23ms  thr=  16.6 rps
+  len=   64 (actual    64): p50=  66.28ms  p95=  71.21ms  mean=  66.93ms  thr=  14.9 rps
+  len=  128 (actual   128): p50=  85.08ms  p95=  91.25ms  mean=  85.89ms  thr=  11.6 rps
+  len=  256 (actual   256): p50= 146.15ms  p95= 154.10ms  mean= 147.06ms  thr=   6.8 rps
+  len=  512 (actual   512): p50= 418.27ms  p95= 503.66ms  mean= 423.51ms  thr=   2.4 rps
+
+=== deepset-deberta-injection ===
+  loaded 1.9s — 184.4M params, max_pos=512, dtype=torch.float32
+  len=   32 (actual    32): p50=  55.63ms  p95=  60.15ms  mean=  56.45ms  thr=  17.7 rps
+  len=   64 (actual    64): p50=  63.17ms  p95=  65.17ms  mean=  63.30ms  thr=  15.8 rps
+  len=  128 (actual   128): p50=  88.09ms  p95=  89.11ms  mean=  86.84ms  thr=  11.5 rps
+  len=  256 (actual   256): p50= 141.80ms  p95= 149.01ms  mean= 142.66ms  thr=   7.0 rps
+  len=  512 (actual   512): p50= 386.59ms  p95= 454.51ms  mean= 396.34ms  thr=   2.5 rps
+
+=== bert-tiny ===  FAIL (same tokenizer error as CUDA pass)
+=== bert-mini ===  FAIL (same tokenizer error as CUDA pass)
+
+=== bert-L4-H256 ===
+  loaded 1.4s — 11.2M params, max_pos=512, dtype=torch.float32
+  [random classifier head — latency-only baseline]
+  len=   32 (actual    32): p50=   1.85ms  p95=   2.31ms  mean=   1.91ms  thr= 524.4 rps
+  len=   64 (actual    64): p50=   2.40ms  p95=   2.78ms  mean=   2.45ms  thr= 408.2 rps
+  len=  128 (actual   128): p50=   3.58ms  p95=   3.73ms  mean=   3.62ms  thr= 276.2 rps
+  len=  256 (actual   256): p50=   6.00ms  p95=   6.21ms  mean=   6.06ms  thr= 164.9 rps
+  len=  512 (actual   512): p50=  11.94ms  p95=  12.35ms  mean=  12.01ms  thr=  83.2 rps
+
+=== minilm-L6-H384 ===
+  loaded 1.0s — 22.7M params, max_pos=512, dtype=torch.float32
+  [random classifier head — latency-only baseline]
+  len=   32 (actual    32): p50=   4.98ms  p95=   5.15ms  mean=   5.01ms  thr= 199.6 rps
+  len=   64 (actual    64): p50=   6.58ms  p95=   6.98ms  mean=   6.62ms  thr= 151.2 rps
+  len=  128 (actual   128): p50=   9.93ms  p95=  10.16ms  mean=   9.97ms  thr= 100.3 rps
+  len=  256 (actual   256): p50=  12.25ms  p95=  12.57ms  mean=  12.29ms  thr=  81.4 rps
+  len=  512 (actual   512): p50=  24.22ms  p95=  24.63ms  mean=  24.23ms  thr=  41.3 rps
+
+=== minilm-L12-H384 ===
+  loaded 1.3s — 33.4M params, max_pos=512, dtype=torch.float32
+  [random classifier head — latency-only baseline]
+  len=   32 (actual    32): p50=   8.83ms  p95=   9.74ms  mean=   8.94ms  thr= 111.9 rps
+  len=   64 (actual    64): p50=  10.74ms  p95=  12.72ms  mean=  11.11ms  thr=  90.0 rps
+  len=  128 (actual   128): p50=  14.78ms  p95=  15.28ms  mean=  14.84ms  thr=  67.4 rps
+  len=  256 (actual   256): p50=  24.62ms  p95=  26.38ms  mean=  24.96ms  thr=  40.1 rps
+  len=  512 (actual   512): p50=  48.40ms  p95=  48.97ms  mean=  48.45ms  thr=  20.6 rps
+
+=== deberta-v3-xsmall ===
+  loaded 1.6s — 70.8M params, max_pos=512, dtype=torch.float32
+  [random classifier head — latency-only baseline]
+  len=   32 (actual    32): p50=  22.04ms  p95=  23.06ms  mean=  22.04ms  thr=  45.4 rps
+  len=   64 (actual    64): p50=  22.23ms  p95=  22.98ms  mean=  22.25ms  thr=  44.9 rps
+  len=  128 (actual   128): p50=  30.15ms  p95=  32.98ms  mean=  30.56ms  thr=  32.7 rps
+  len=  256 (actual   256): p50=  51.56ms  p95=  60.90ms  mean=  52.73ms  thr=  19.0 rps
+  len=  512 (actual   512): p50= 140.08ms  p95= 149.22ms  mean= 140.65ms  thr=   7.1 rps
+
+=== deberta-v3-small ===
+  loaded 1.8s — 141.9M params, max_pos=512, dtype=torch.float32
+  [random classifier head — latency-only baseline]
+  len=   32 (actual    32): p50=  27.77ms  p95=  29.67ms  mean=  28.11ms  thr=  35.6 rps
+  len=   64 (actual    64): p50=  32.09ms  p95=  33.04ms  mean=  32.22ms  thr=  31.0 rps
+  len=  128 (actual   128): p50=  42.61ms  p95=  43.63ms  mean=  42.63ms  thr=  23.5 rps
+  len=  256 (actual   256): p50=  72.78ms  p95=  76.97ms  mean=  73.18ms  thr=  13.7 rps
+  len=  512 (actual   512): p50= 183.37ms  p95= 192.69ms  mean= 183.95ms  thr=   5.4 rps
+
+=== distilbert-base ===
+  loaded 1.3s — 67.0M params, max_pos=512, dtype=torch.float32
+  [random classifier head — latency-only baseline]
+  len=   32 (actual    32): p50=  14.12ms  p95=  16.71ms  mean=  14.52ms  thr=  68.9 rps
+  len=   64 (actual    64): p50=  20.88ms  p95=  23.01ms  mean=  19.55ms  thr=  51.2 rps
+  len=  128 (actual   128): p50=  24.12ms  p95=  24.41ms  mean=  24.16ms  thr=  41.4 rps
+  len=  256 (actual   256): p50=  40.80ms  p95=  41.37ms  mean=  40.84ms  thr=  24.5 rps
+  len=  512 (actual   512): p50=  79.76ms  p95=  80.45ms  mean=  79.76ms  thr=  12.5 rps
+
+Wrote results/latency_cpu.json (total 243.7s)

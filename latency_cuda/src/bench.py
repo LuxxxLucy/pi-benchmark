@@ -21,6 +21,13 @@ import time
 from pathlib import Path
 from statistics import mean, stdev
 
+# Must be set BEFORE importing transformers so the logger picks it up.
+# Suppresses the cosmetic "Token indices sequence length is longer than ..."
+# warning that fires when the fill loop hands the tokenizer a string
+# longer than max_length (the tokenizer still truncates to the target).
+os.environ.setdefault("TRANSFORMERS_VERBOSITY", "error")
+os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+
 import torch
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
@@ -65,7 +72,16 @@ def bench_one(spec: ModelSpec, device: str, lengths: list[int],
     dtype = pick_dtype(device)
 
     t0 = time.perf_counter()
-    tokenizer = AutoTokenizer.from_pretrained(spec.hf_id, use_fast=True)
+    try:
+        tokenizer = AutoTokenizer.from_pretrained(spec.hf_id, use_fast=True)
+    except ValueError as e:
+        # Some older BERT repos (e.g. prajjwal1/bert-tiny, bert-mini) ship
+        # only vocab.txt. The slow->fast converter tries to import
+        # sentencepiece/tiktoken even for WordPiece; falling back to the
+        # slow tokenizer avoids the convert path entirely.
+        print(f"  [slow-tokenizer] use_fast=True failed ({e.__class__.__name__}); "
+              f"retrying with use_fast=False")
+        tokenizer = AutoTokenizer.from_pretrained(spec.hf_id, use_fast=False)
     model = AutoModelForSequenceClassification.from_pretrained(
         spec.hf_id, dtype=dtype,
     ).to(device).eval()
@@ -136,6 +152,7 @@ def bench_one(spec: ModelSpec, device: str, lengths: list[int],
         "batch_size": 1,
         "warmup_iters": warmup,
         "measure_iters": measure,
+        "random_head": spec.group == "arch-baseline",
         "lengths": per_length,
     }
 
@@ -165,8 +182,6 @@ def main() -> int:
     args = ap.parse_args()
 
     device = pick_device(args.device)
-    os.environ.setdefault("TRANSFORMERS_VERBOSITY", "error")
-    os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 
     if args.models == "all":
         picks = list(CANDIDATES)
