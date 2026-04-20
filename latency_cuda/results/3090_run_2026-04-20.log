@@ -1,0 +1,413 @@
+Resolved 59 packages in 0.60ms
+Audited 58 packages in 0.57ms
+[download] testsavantai/prompt-injection-defender-tiny-v0  (testsavantai-tiny)
+[download] testsavantai/prompt-injection-defender-small-v0  (testsavantai-small)
+[download] testsavantai/prompt-injection-defender-medium-v0  (testsavantai-medium)
+[download] testsavantai/prompt-injection-defender-base-v0  (testsavantai-base)
+[download] fmops/distilbert-prompt-injection  (fmops-distilbert)
+[download] protectai/deberta-v3-base-prompt-injection-v2  (protectai-deberta-v2)
+[download] deepset/deberta-v3-base-injection  (deepset-deberta-injection)
+[download] prajjwal1/bert-tiny  (bert-tiny)
+[download] prajjwal1/bert-mini  (bert-mini)
+[download] google/bert_uncased_L-4_H-256_A-4  (bert-L4-H256)
+[download] sentence-transformers/all-MiniLM-L6-v2  (minilm-L6-H384)
+[download] microsoft/MiniLM-L12-H384-uncased  (minilm-L12-H384)
+[download] microsoft/deberta-v3-xsmall  (deberta-v3-xsmall)
+[download] microsoft/deberta-v3-small  (deberta-v3-small)
+[download] distilbert-base-uncased  (distilbert-base)
+[download] google/bert_uncased_L-4_H-512_A-8  (bert-L4-H512)
+[download] albert/albert-base-v2  (albert-base-v2)
+[download] google/electra-small-discriminator  (electra-small)
+[download] google/mobilebert-uncased  (mobilebert)
+[download] TaylorAI/bge-micro-v2  (bge-micro-v2)
+[download] BAAI/bge-small-en-v1.5  (bge-small-en-v1.5)
+[download] answerdotai/ModernBERT-base  (modernbert-base)
+[download] jhu-clsp/ettin-encoder-150m  (ettin-encoder-150m)
+[download] Alibaba-NLP/gte-base-en-v1.5  (gte-base-en-v1.5)
+[download] done.
+env: {
+  "platform": "Linux-6.8.0-106-generic-x86_64-with-glibc2.35",
+  "torch": "2.6.0+cu124",
+  "cuda": "12.4",
+  "device": "cuda",
+  "gpu_name": "NVIDIA GeForce RTX 3090",
+  "dtype": "bfloat16",
+  "lengths": [32, 64, 128, 256, 512, 1024, 2048, 4096],
+  "warmup_iters": 10,
+  "measure_iters": 50
+}
+
+=== testsavantai-tiny  (testsavantai/prompt-injection-defender-tiny-v0)  [minilm / pi-trained] ===
+  loaded 1.7s — 4.4M params, max_pos=512, dtype=torch.bfloat16
+  skipping lengths > max_pos=512: [1024, 2048, 4096]
+  len=   32 (actual    32): p50=   1.33ms  p95=   4.66ms  mean=   1.86ms  thr= 538.7 rps
+  len=   64 (actual    64): p50=   1.08ms  p95=   4.63ms  mean=   1.65ms  thr= 607.7 rps
+  len=  128 (actual   128): p50=   1.08ms  p95=   4.62ms  mean=   1.57ms  thr= 637.1 rps
+  len=  256 (actual   256): p50=   1.09ms  p95=   4.63ms  mean=   1.47ms  thr= 682.6 rps
+  len=  512 (actual   512): p50=   1.10ms  p95=   3.77ms  mean=   1.36ms  thr= 732.7 rps
+
+=== testsavantai-small  (testsavantai/prompt-injection-defender-small-v0)  [minilm / pi-trained] ===
+  loaded 1.0s — 28.8M params, max_pos=512, dtype=torch.bfloat16
+  len=   32 (actual    32): p50=   2.76ms  p95=   4.86ms  mean=   3.20ms  thr= 312.1 rps
+  len=   64 (actual    64): p50=   2.05ms  p95=   4.87ms  mean=   2.74ms  thr= 364.4 rps
+  len=  128 (actual   128): p50=   1.95ms  p95=   4.88ms  mean=   2.47ms  thr= 404.1 rps
+  len=  256 (actual   256): p50=   2.01ms  p95=   5.19ms  mean=   2.91ms  thr= 343.9 rps
+  len=  512 (actual   512): p50=   1.68ms  p95=   4.93ms  mean=   2.15ms  thr= 464.9 rps
+
+=== testsavantai-medium  (testsavantai/prompt-injection-defender-medium-v0)  [deberta / pi-trained] ===
+  loaded 1.1s — 41.4M params, max_pos=512, dtype=torch.bfloat16
+  len=   32 (actual    32): p50=   3.77ms  p95=   7.35ms  mean=   4.25ms  thr= 235.1 rps
+  len=   64 (actual    64): p50=   3.57ms  p95=   5.17ms  mean=   3.96ms  thr= 252.5 rps
+  len=  128 (actual   128): p50=   3.75ms  p95=   5.20ms  mean=   3.93ms  thr= 254.2 rps
+  len=  256 (actual   256): p50=   3.48ms  p95=   5.40ms  mean=   3.90ms  thr= 256.2 rps
+  len=  512 (actual   512): p50=   3.80ms  p95=   5.66ms  mean=   4.12ms  thr= 242.9 rps
+
+=== testsavantai-base  (testsavantai/prompt-injection-defender-base-v0)  [deberta / pi-trained] ===
+  loaded 1.3s — 67.0M params, max_pos=512, dtype=torch.bfloat16
+  len=   32 (actual    32): p50=   2.60ms  p95=   5.06ms  mean=   3.28ms  thr= 305.3 rps
+  len=   64 (actual    64): p50=   2.60ms  p95=   5.05ms  mean=   3.06ms  thr= 326.3 rps
+  len=  128 (actual   128): p50=   2.34ms  p95=   5.27ms  mean=   3.13ms  thr= 319.7 rps
+  len=  256 (actual   256): p50=   2.26ms  p95=   5.45ms  mean=   3.29ms  thr= 304.3 rps
+  len=  512 (actual   512): p50=   2.12ms  p95=   3.81ms  mean=   2.35ms  thr= 426.4 rps
+
+=== fmops-distilbert  (fmops/distilbert-prompt-injection)  [distilbert / pi-trained] ===
+  loaded 1.3s — 67.0M params, max_pos=512, dtype=torch.bfloat16
+  len=   32 (actual    32): p50=   2.69ms  p95=   5.08ms  mean=   3.09ms  thr= 323.2 rps
+  len=   64 (actual    64): p50=   2.91ms  p95=   5.13ms  mean=   3.43ms  thr= 291.7 rps
+  len=  128 (actual   128): p50=   2.34ms  p95=   5.27ms  mean=   3.16ms  thr= 316.1 rps
+  len=  256 (actual   256): p50=   2.34ms  p95=   5.44ms  mean=   3.16ms  thr= 316.6 rps
+  len=  512 (actual   512): p50=   2.28ms  p95=   3.22ms  mean=   2.42ms  thr= 412.8 rps
+
+=== protectai-deberta-v2  (protectai/deberta-v3-base-prompt-injection-v2)  [deberta / pi-trained] ===
+  loaded 1.8s — 184.4M params, max_pos=512, dtype=torch.bfloat16
+  len=   32 (actual    32): p50=  11.94ms  p95=  13.84ms  mean=  12.21ms  thr=  81.9 rps
+  len=   64 (actual    64): p50=  12.07ms  p95=  13.90ms  mean=  12.19ms  thr=  82.0 rps
+  len=  128 (actual   128): p50=  12.46ms  p95=  14.37ms  mean=  12.53ms  thr=  79.8 rps
+  len=  256 (actual   256): p50=  12.40ms  p95=  15.13ms  mean=  12.91ms  thr=  77.5 rps
+  len=  512 (actual   512): p50=  14.05ms  p95=  18.98ms  mean=  14.66ms  thr=  68.2 rps
+
+=== deepset-deberta-injection  (deepset/deberta-v3-base-injection)  [deberta / pi-trained] ===
+  loaded 2.3s — 184.4M params, max_pos=512, dtype=torch.bfloat16
+  len=   32 (actual    32): p50=  12.17ms  p95=  13.93ms  mean=  12.45ms  thr=  80.3 rps
+  len=   64 (actual    64): p50=  12.30ms  p95=  13.86ms  mean=  12.36ms  thr=  80.9 rps
+  len=  128 (actual   128): p50=  11.93ms  p95=  14.43ms  mean=  12.34ms  thr=  81.0 rps
+  len=  256 (actual   256): p50=  12.58ms  p95=  13.69ms  mean=  12.12ms  thr=  82.5 rps
+  len=  512 (actual   512): p50=  13.50ms  p95=  18.88ms  mean=  14.26ms  thr=  70.1 rps
+
+=== bert-tiny  (prajjwal1/bert-tiny)  [bert-tiny / arch-baseline] ===
+FAIL bert-tiny: ValueError — tokenizer convert requires sentencepiece/tiktoken; use_fast=False fallback also fails.
+
+=== bert-mini  (prajjwal1/bert-mini)  [bert-tiny / arch-baseline] ===
+FAIL bert-mini: ValueError — tokenizer convert requires sentencepiece/tiktoken; use_fast=False fallback also fails.
+
+=== bert-L4-H256  (google/bert_uncased_L-4_H-256_A-4)  [bert-tiny / arch-baseline] ===
+  loaded 1.4s — 11.2M params, max_pos=512, dtype=torch.bfloat16
+  len=   32 (actual    32): p50=   2.01ms  p95=   4.93ms  mean=   2.71ms  thr= 369.0 rps
+  len=   64 (actual    64): p50=   2.03ms  p95=   4.82ms  mean=   2.67ms  thr= 375.1 rps
+  len=  128 (actual   128): p50=   2.15ms  p95=   4.86ms  mean=   2.83ms  thr= 353.7 rps
+  len=  256 (actual   256): p50=   2.10ms  p95=   4.87ms  mean=   2.73ms  thr= 366.3 rps
+  len=  512 (actual   512): p50=   2.17ms  p95=   4.95ms  mean=   2.83ms  thr= 353.3 rps
+
+=== minilm-L6-H384  (sentence-transformers/all-MiniLM-L6-v2)  [minilm / arch-baseline] ===
+  loaded 1.1s — 22.7M params, max_pos=512, dtype=torch.bfloat16
+  len=   32 (actual    32): p50=   2.81ms  p95=   4.89ms  mean=   3.37ms  thr= 296.7 rps
+  len=   64 (actual    64): p50=   2.79ms  p95=   4.94ms  mean=   3.17ms  thr= 315.3 rps
+  len=  128 (actual   128): p50=   3.13ms  p95=   5.11ms  mean=   3.61ms  thr= 276.9 rps
+  len=  256 (actual   256): p50=   2.68ms  p95=   5.10ms  mean=   3.39ms  thr= 295.3 rps
+  len=  512 (actual   512): p50=   2.58ms  p95=   5.26ms  mean=   3.09ms  thr= 323.7 rps
+
+=== minilm-L12-H384  (microsoft/MiniLM-L12-H384-uncased)  [minilm / arch-baseline] ===
+  loaded 1.3s — 33.4M params, max_pos=512, dtype=torch.bfloat16
+  len=   32 (actual    32): p50=   5.25ms  p95=   7.75ms  mean=   5.66ms  thr= 176.7 rps
+  len=   64 (actual    64): p50=   6.08ms  p95=   7.71ms  mean=   6.06ms  thr= 165.0 rps
+  len=  128 (actual   128): p50=   4.96ms  p95=   7.69ms  mean=   5.58ms  thr= 179.4 rps
+  len=  256 (actual   256): p50=   4.86ms  p95=   8.04ms  mean=   5.47ms  thr= 182.8 rps
+  len=  512 (actual   512): p50=   5.57ms  p95=   8.36ms  mean=   6.11ms  thr= 163.7 rps
+
+=== deberta-v3-xsmall  (microsoft/deberta-v3-xsmall)  [deberta / arch-baseline] ===
+  loaded 1.5s — 70.8M params, max_pos=512, dtype=torch.bfloat16
+  len=   32 (actual    32): p50=  12.44ms  p95=  15.27ms  mean=  12.57ms  thr=  79.6 rps
+  len=   64 (actual    64): p50=  12.20ms  p95=  13.68ms  mean=  12.48ms  thr=  80.1 rps
+  len=  128 (actual   128): p50=  12.08ms  p95=  13.95ms  mean=  12.33ms  thr=  81.1 rps
+  len=  256 (actual   256): p50=  12.31ms  p95=  13.94ms  mean=  12.47ms  thr=  80.2 rps
+  len=  512 (actual   512): p50=  12.49ms  p95=  13.71ms  mean=  12.01ms  thr=  83.3 rps
+
+=== deberta-v3-small  (microsoft/deberta-v3-small)  [deberta / arch-baseline] ===
+  loaded 2.3s — 141.9M params, max_pos=512, dtype=torch.bfloat16
+  len=   32 (actual    32): p50=   6.29ms  p95=   8.45ms  mean=   6.71ms  thr= 149.0 rps
+  len=   64 (actual    64): p50=   7.47ms  p95=   8.27ms  mean=   7.04ms  thr= 142.1 rps
+  len=  128 (actual   128): p50=   7.50ms  p95=   8.47ms  mean=   7.23ms  thr= 138.4 rps
+  len=  256 (actual   256): p50=   6.29ms  p95=   8.77ms  mean=   6.81ms  thr= 146.8 rps
+  len=  512 (actual   512): p50=   8.40ms  p95=  10.78ms  mean=   8.15ms  thr= 122.6 rps
+
+=== distilbert-base  (distilbert-base-uncased)  [distilbert / arch-baseline] ===
+  loaded 1.1s — 67.0M params, max_pos=512, dtype=torch.bfloat16
+  len=   32 (actual    32): p50=   2.82ms  p95=   5.24ms  mean=   3.32ms  thr= 300.8 rps
+  len=   64 (actual    64): p50=   2.76ms  p95=   5.12ms  mean=   3.24ms  thr= 308.8 rps
+  len=  128 (actual   128): p50=   3.28ms  p95=   5.39ms  mean=   3.67ms  thr= 272.7 rps
+  len=  256 (actual   256): p50=   2.39ms  p95=   5.48ms  mean=   3.21ms  thr= 311.3 rps
+  len=  512 (actual   512): p50=   2.44ms  p95=   6.04ms  mean=   3.32ms  thr= 300.9 rps
+
+=== bert-L4-H512  (google/bert_uncased_L-4_H-512_A-8)  [bert-tiny / arch-baseline] ===
+  loaded 2.3s — 28.8M params, max_pos=512, dtype=torch.bfloat16
+  len=   32 (actual    32): p50=   1.91ms  p95=   4.84ms  mean=   2.58ms  thr= 388.2 rps
+  len=   64 (actual    64): p50=   1.78ms  p95=   4.83ms  mean=   2.25ms  thr= 445.3 rps
+  len=  128 (actual   128): p50=   2.58ms  p95=   4.93ms  mean=   2.95ms  thr= 339.2 rps
+  len=  256 (actual   256): p50=   1.72ms  p95=   4.96ms  mean=   2.31ms  thr= 433.2 rps
+  len=  512 (actual   512): p50=   2.82ms  p95=   5.11ms  mean=   3.26ms  thr= 307.1 rps
+
+=== albert-base-v2  (albert/albert-base-v2)  [albert / arch-baseline] ===
+  loaded 2.5s — 11.7M params, max_pos=512, dtype=torch.bfloat16
+  len=   32 (actual    32): p50=   5.83ms  p95=   8.13ms  mean=   6.34ms  thr= 157.7 rps
+  len=   64 (actual    64): p50=   6.14ms  p95=   8.23ms  mean=   6.47ms  thr= 154.6 rps
+  len=  128 (actual   128): p50=   5.91ms  p95=   8.62ms  mean=   6.39ms  thr= 156.4 rps
+  len=  256 (actual   256): p50=   7.00ms  p95=   9.04ms  mean=   6.96ms  thr= 143.6 rps
+  len=  512 (actual   512): p50=   6.50ms  p95=  10.49ms  mean=   7.43ms  thr= 134.6 rps
+
+=== electra-small  (google/electra-small-discriminator)  [electra / arch-baseline] ===
+  loaded 1.9s — 13.5M params, max_pos=512, dtype=torch.bfloat16
+  len=   32 (actual    32): p50=   4.96ms  p95=   7.52ms  mean=   5.54ms  thr= 180.5 rps
+  len=   64 (actual    64): p50=   4.76ms  p95=   7.57ms  mean=   5.35ms  thr= 187.0 rps
+  len=  128 (actual   128): p50=   5.16ms  p95=   7.77ms  mean=   5.76ms  thr= 173.5 rps
+  len=  256 (actual   256): p50=   5.20ms  p95=   7.77ms  mean=   5.74ms  thr= 174.2 rps
+  len=  512 (actual   512): p50=   6.02ms  p95=   7.92ms  mean=   6.17ms  thr= 162.0 rps
+
+=== mobilebert  (google/mobilebert-uncased)  [mobilebert / arch-baseline] ===
+  loaded 2.6s — 24.6M params, max_pos=512, dtype=torch.bfloat16
+  len=   32 (actual    32): p50=  18.48ms  p95=  21.73ms  mean=  18.54ms  thr=  53.9 rps
+  len=   64 (actual    64): p50=  18.11ms  p95=  19.52ms  mean=  18.01ms  thr=  55.5 rps
+  len=  128 (actual   128): p50=  17.67ms  p95=  19.51ms  mean=  17.84ms  thr=  56.1 rps
+  len=  256 (actual   256): p50=  18.27ms  p95=  19.81ms  mean=  18.19ms  thr=  55.0 rps
+  len=  512 (actual   512): p50=  18.44ms  p95=  20.13ms  mean=  18.36ms  thr=  54.5 rps
+
+=== bge-micro-v2  (TaylorAI/bge-micro-v2)  [bert-tiny / arch-baseline] ===
+  loaded 1.9s — 17.4M params, max_pos=512, dtype=torch.bfloat16
+  len=   32 (actual    32): p50=   1.59ms  p95=   4.69ms  mean=   1.98ms  thr= 503.8 rps
+  len=   64 (actual    64): p50=   1.51ms  p95=   2.23ms  mean=   1.70ms  thr= 589.0 rps
+  len=  128 (actual   128): p50=   2.11ms  p95=   4.85ms  mean=   2.83ms  thr= 353.1 rps
+  len=  256 (actual   256): p50=   1.41ms  p95=   4.78ms  mean=   1.99ms  thr= 501.5 rps
+  len=  512 (actual   512): p50=   1.66ms  p95=   4.23ms  mean=   2.03ms  thr= 491.5 rps
+
+=== bge-small-en-v1.5  (BAAI/bge-small-en-v1.5)  [minilm / arch-baseline] ===
+  loaded 1.4s — 33.4M params, max_pos=512, dtype=torch.bfloat16
+  len=   32 (actual    32): p50=   4.85ms  p95=   7.47ms  mean=   5.57ms  thr= 179.5 rps
+  len=   64 (actual    64): p50=   5.35ms  p95=   7.83ms  mean=   5.94ms  thr= 168.3 rps
+  len=  128 (actual   128): p50=   5.08ms  p95=   7.80ms  mean=   5.66ms  thr= 176.7 rps
+  len=  256 (actual   256): p50=   5.22ms  p95=   7.86ms  mean=   5.87ms  thr= 170.3 rps
+  len=  512 (actual   512): p50=   5.13ms  p95=   8.29ms  mean=   5.81ms  thr= 172.1 rps
+
+=== modernbert-base  (answerdotai/ModernBERT-base)  [modernbert / arch-baseline] ===
+  loaded 1.8s — 149.6M params, max_pos=8192, dtype=torch.bfloat16
+  len=   32 (actual    32): p50=  13.97ms  p95=  19.04ms  mean=  14.75ms  thr=  67.8 rps
+  len=   64 (actual    64): p50=  15.29ms  p95=  19.35ms  mean=  15.74ms  thr=  63.5 rps
+  len=  128 (actual   128): p50=  15.74ms  p95=  19.55ms  mean=  16.17ms  thr=  61.8 rps
+  len=  256 (actual   256): p50=  15.04ms  p95=  18.02ms  mean=  15.62ms  thr=  64.0 rps
+  len=  512 (actual   512): p50=  16.79ms  p95=  20.18ms  mean=  16.64ms  thr=  60.1 rps
+  len= 1024 (actual  1024): p50=  15.64ms  p95=  32.19ms  mean=  19.86ms  thr=  50.4 rps
+  len= 2048 (actual  2048): p50=  29.58ms  p95=  54.85ms  mean=  35.77ms  thr=  28.0 rps
+  len= 4096 (actual  4096): p50=  67.76ms  p95= 114.69ms  mean=  78.57ms  thr=  12.7 rps
+
+=== ettin-encoder-150m  (jhu-clsp/ettin-encoder-150m)  [modernbert / arch-baseline] ===
+  loaded 2.5s — 149.6M params, max_pos=7999, dtype=torch.bfloat16
+  len=   32 (actual    32): p50=  15.33ms  p95=  18.96ms  mean=  15.50ms  thr=  64.5 rps
+  len=   64 (actual    64): p50=  14.81ms  p95=  19.05ms  mean=  15.37ms  thr=  65.1 rps
+  len=  128 (actual   128): p50=  15.52ms  p95=  17.83ms  mean=  15.46ms  thr=  64.7 rps
+  len=  256 (actual   256): p50=  15.13ms  p95=  17.95ms  mean=  15.25ms  thr=  65.6 rps
+  len=  512 (actual   512): p50=  16.44ms  p95=  20.16ms  mean=  16.44ms  thr=  60.8 rps
+  len= 1024 (actual  1024): p50=  15.47ms  p95=  32.06ms  mean=  19.54ms  thr=  51.2 rps
+  len= 2048 (actual  2048): p50=  29.39ms  p95=  54.33ms  mean=  35.65ms  thr=  28.1 rps
+  len= 4096 (actual  4096): p50=  67.77ms  p95= 116.30ms  mean=  79.02ms  thr=  12.7 rps
+
+=== gte-base-en-v1.5  (Alibaba-NLP/gte-base-en-v1.5)  [new / arch-baseline] ===
+  loaded 3.2s — 137.4M params, max_pos=8192, dtype=torch.bfloat16
+  len=   32 (actual    32): p50=   5.86ms  p95=   6.46ms  mean=   5.82ms  thr= 171.9 rps
+  len=   64 (actual    64): p50=   5.84ms  p95=   6.18ms  mean=   5.67ms  thr= 176.2 rps
+  len=  128 (actual   128): p50=   6.11ms  p95=   6.69ms  mean=   6.02ms  thr= 166.1 rps
+  len=  256 (actual   256): p50=   6.07ms  p95=   7.12ms  mean=   6.09ms  thr= 164.2 rps
+  len=  512 (actual   512): p50=   5.05ms  p95=   8.60ms  mean=   6.15ms  thr= 162.7 rps
+  len= 1024 (actual  1024): p50=   8.51ms  p95=  14.90ms  mean=   9.28ms  thr= 107.8 rps
+  len= 2048 (actual  2048): p50=  17.44ms  p95=  33.50ms  mean=  20.05ms  thr=  49.9 rps
+  len= 4096 (actual  4096): p50=  39.02ms  p95=  67.34ms  mean=  43.93ms  thr=  22.8 rps
+
+Wrote results/latency_cuda.json (total 173.9s)
+
+env: {
+  "platform": "Linux-6.8.0-106-generic-x86_64-with-glibc2.35",
+  "torch": "2.6.0+cu124",
+  "cuda": null,
+  "device": "cpu",
+  "gpu_name": null,
+  "dtype": "float32",
+  "lengths": [32, 64, 128, 256, 512, 1024, 2048, 4096],
+  "warmup_iters": 10,
+  "measure_iters": 50
+}
+
+=== testsavantai-tiny ===
+  len=   32: p50=   0.87ms  p95=   0.91ms  mean=   0.88ms  thr=1133.4 rps
+  len=   64: p50=   0.96ms  p95=   1.01ms  mean=   0.98ms  thr=1021.4 rps
+  len=  128: p50=   1.16ms  p95=   1.21ms  mean=   1.18ms  thr= 846.3 rps
+  len=  256: p50=   1.62ms  p95=   1.67ms  mean=   1.64ms  thr= 608.8 rps
+  len=  512: p50=   2.76ms  p95=   2.94ms  mean=   2.79ms  thr= 357.9 rps
+
+=== testsavantai-small ===
+  len=   32: p50=   6.35ms  p95=   6.51ms  mean=   6.38ms  thr= 156.7 rps
+  len=   64: p50=   8.22ms  p95=   8.39ms  mean=   8.23ms  thr= 121.5 rps
+  len=  128: p50=  10.76ms  p95=  10.97ms  mean=  10.79ms  thr=  92.7 rps
+  len=  256: p50=  14.54ms  p95=  18.51ms  mean=  14.95ms  thr=  66.9 rps
+  len=  512: p50=  27.50ms  p95=  28.04ms  mean=  27.36ms  thr=  36.6 rps
+
+=== testsavantai-medium ===
+  len=   32: p50=  11.00ms  p95=  11.18ms  mean=  10.98ms  thr=  91.0 rps
+  len=   64: p50=  11.24ms  p95=  14.16ms  mean=  11.50ms  thr=  87.0 rps
+  len=  128: p50=  16.29ms  p95=  16.75ms  mean=  16.26ms  thr=  61.5 rps
+  len=  256: p50=  26.95ms  p95=  27.66ms  mean=  26.90ms  thr=  37.2 rps
+  len=  512: p50=  54.27ms  p95=  58.25ms  mean=  54.79ms  thr=  18.3 rps
+
+=== testsavantai-base ===
+  len=   32: p50=  15.48ms  p95=  16.72ms  mean=  15.63ms  thr=  64.0 rps
+  len=   64: p50=  20.20ms  p95=  20.90ms  mean=  20.27ms  thr=  49.3 rps
+  len=  128: p50=  32.24ms  p95=  32.81ms  mean=  32.27ms  thr=  31.0 rps
+  len=  256: p50=  57.24ms  p95=  58.86ms  mean=  57.44ms  thr=  17.4 rps
+  len=  512: p50=  81.61ms  p95=  84.34ms  mean=  82.30ms  thr=  12.2 rps
+
+=== fmops-distilbert ===
+  len=   32: p50=  13.18ms  p95=  15.09ms  mean=  13.44ms  thr=  74.4 rps
+  len=   64: p50=  17.46ms  p95=  18.27ms  mean=  17.44ms  thr=  57.3 rps
+  len=  128: p50=  25.19ms  p95=  26.23ms  mean=  25.29ms  thr=  39.5 rps
+  len=  256: p50=  42.17ms  p95=  43.00ms  mean=  42.20ms  thr=  23.7 rps
+  len=  512: p50=  83.43ms  p95= 116.78ms  mean=  92.69ms  thr=  10.8 rps
+
+=== protectai-deberta-v2 ===
+  len=   32: p50=  73.26ms  p95=  76.47ms  mean=  68.40ms  thr=  14.6 rps
+  len=   64: p50=  67.25ms  p95=  70.05ms  mean=  67.47ms  thr=  14.8 rps
+  len=  128: p50=  90.86ms  p95=  92.22ms  mean=  91.79ms  thr=  10.9 rps
+  len=  256: p50= 139.88ms  p95= 147.64ms  mean= 140.61ms  thr=   7.1 rps
+  len=  512: p50= 394.88ms  p95= 414.77ms  mean= 398.47ms  thr=   2.5 rps
+
+=== deepset-deberta-injection ===
+  len=   32: p50=  57.10ms  p95=  58.51ms  mean=  57.28ms  thr=  17.5 rps
+  len=   64: p50=  69.10ms  p95=  72.89ms  mean=  68.86ms  thr=  14.5 rps
+  len=  128: p50=  87.51ms  p95=  93.47ms  mean=  88.35ms  thr=  11.3 rps
+  len=  256: p50= 142.08ms  p95= 147.14ms  mean= 141.69ms  thr=   7.1 rps
+  len=  512: p50= 400.81ms  p95= 418.57ms  mean= 401.51ms  thr=   2.5 rps
+
+=== bert-tiny === FAIL (tokenizer)
+=== bert-mini === FAIL (tokenizer)
+
+=== bert-L4-H256 ===
+  len=   32: p50=   1.99ms  p95=   2.17ms  mean=   2.04ms  thr= 490.2 rps
+  len=   64: p50=   2.56ms  p95=   2.69ms  mean=   2.59ms  thr= 386.2 rps
+  len=  128: p50=   3.66ms  p95=   3.81ms  mean=   3.71ms  thr= 269.5 rps
+  len=  256: p50=   6.02ms  p95=   6.17ms  mean=   6.08ms  thr= 164.5 rps
+  len=  512: p50=  11.79ms  p95=  11.94ms  mean=  11.81ms  thr=  84.7 rps
+
+=== minilm-L6-H384 ===
+  len=   32: p50=   5.21ms  p95=   5.41ms  mean=   5.24ms  thr= 190.9 rps
+  len=   64: p50=   6.79ms  p95=   7.00ms  mean=   6.54ms  thr= 152.8 rps
+  len=  128: p50=   7.97ms  p95=   8.17ms  mean=   7.95ms  thr= 125.9 rps
+  len=  256: p50=  12.94ms  p95=  13.34ms  mean=  12.86ms  thr=  77.7 rps
+  len=  512: p50=  25.72ms  p95=  26.20ms  mean=  25.63ms  thr=  39.0 rps
+
+=== minilm-L12-H384 ===
+  len=   32: p50=   8.90ms  p95=   9.74ms  mean=   9.00ms  thr= 111.1 rps
+  len=   64: p50=  10.89ms  p95=  13.05ms  mean=  11.47ms  thr=  87.2 rps
+  len=  128: p50=  15.21ms  p95=  15.70ms  mean=  15.22ms  thr=  65.7 rps
+  len=  256: p50=  25.29ms  p95=  26.09ms  mean=  25.32ms  thr=  39.5 rps
+  len=  512: p50=  49.28ms  p95=  50.11ms  mean=  49.29ms  thr=  20.3 rps
+
+=== deberta-v3-xsmall ===
+  len=   32: p50=  19.48ms  p95=  22.64ms  mean=  20.31ms  thr=  49.2 rps
+  len=   64: p50=  22.12ms  p95=  22.72ms  mean=  22.18ms  thr=  45.1 rps
+  len=  128: p50=  32.76ms  p95=  37.03ms  mean=  32.38ms  thr=  30.9 rps
+  len=  256: p50=  48.61ms  p95=  51.65ms  mean=  48.69ms  thr=  20.5 rps
+  len=  512: p50= 113.19ms  p95= 119.47ms  mean= 113.83ms  thr=   8.8 rps
+
+=== deberta-v3-small ===
+  len=   32: p50=  28.79ms  p95=  31.18ms  mean=  29.17ms  thr=  34.3 rps
+  len=   64: p50=  32.91ms  p95=  35.25ms  mean=  33.32ms  thr=  30.0 rps
+  len=  128: p50=  42.42ms  p95=  43.28ms  mean=  42.47ms  thr=  23.5 rps
+  len=  256: p50=  70.41ms  p95=  95.56ms  mean=  73.88ms  thr=  13.5 rps
+  len=  512: p50= 208.96ms  p95= 254.04ms  mean= 223.06ms  thr=   4.5 rps
+
+=== distilbert-base ===
+  len=   32: p50=  14.43ms  p95=  23.72ms  mean=  16.22ms  thr=  61.7 rps
+  len=   64: p50=  17.91ms  p95=  18.65ms  mean=  17.84ms  thr=  56.1 rps
+  len=  128: p50=  30.04ms  p95=  34.75ms  mean=  29.88ms  thr=  33.5 rps
+  len=  256: p50=  42.63ms  p95=  43.28ms  mean=  42.54ms  thr=  23.5 rps
+  len=  512: p50=  83.39ms  p95=  85.45ms  mean=  83.45ms  thr=  12.0 rps
+
+=== bert-L4-H512 ===
+  len=   32: p50=   5.42ms  p95=   5.78ms  mean=   5.47ms  thr= 182.8 rps
+  len=   64: p50=   6.98ms  p95=   7.60ms  mean=   7.04ms  thr= 142.0 rps
+  len=  128: p50=  10.43ms  p95=  10.64ms  mean=  10.47ms  thr=  95.5 rps
+  len=  256: p50=  18.21ms  p95=  18.47ms  mean=  18.22ms  thr=  54.9 rps
+  len=  512: p50=  37.55ms  p95=  39.02ms  mean=  37.28ms  thr=  26.8 rps
+
+=== albert-base-v2 ===
+  len=   32: p50=  24.69ms  p95=  32.58ms  mean=  26.27ms  thr=  38.1 rps
+  len=   64: p50=  36.04ms  p95=  38.23ms  mean=  36.35ms  thr=  27.5 rps
+  len=  128: p50=  56.57ms  p95=  57.88ms  mean=  56.64ms  thr=  17.7 rps
+  len=  256: p50= 104.01ms  p95= 106.74ms  mean= 104.18ms  thr=   9.6 rps
+  len=  512: p50= 193.62ms  p95= 197.85ms  mean= 193.84ms  thr=   5.2 rps
+
+=== electra-small ===
+  len=   32: p50=   6.48ms  p95=   7.89ms  mean=   6.61ms  thr= 151.4 rps
+  len=   64: p50=   6.73ms  p95=   7.64ms  mean=   6.83ms  thr= 146.4 rps
+  len=  128: p50=   9.11ms  p95=   9.34ms  mean=   9.12ms  thr= 109.7 rps
+  len=  256: p50=  14.71ms  p95=  15.42ms  mean=  14.63ms  thr=  68.4 rps
+  len=  512: p50=  26.16ms  p95=  26.61ms  mean=  26.10ms  thr=  38.3 rps
+
+=== mobilebert ===
+  len=   32: p50=  15.41ms  p95=  16.45ms  mean=  15.53ms  thr=  64.4 rps
+  len=   64: p50=  18.56ms  p95=  19.12ms  mean=  18.57ms  thr=  53.8 rps
+  len=  128: p50=  23.87ms  p95=  24.26ms  mean=  23.89ms  thr=  41.9 rps
+  len=  256: p50=  35.07ms  p95=  39.00ms  mean=  36.10ms  thr=  27.7 rps
+  len=  512: p50=  57.98ms  p95=  58.73ms  mean=  57.94ms  thr=  17.3 rps
+
+=== bge-micro-v2 ===
+  len=   32: p50=   2.40ms  p95=   2.55ms  mean=   2.43ms  thr= 411.0 rps
+  len=   64: p50=   3.21ms  p95=   3.42ms  mean=   3.25ms  thr= 307.5 rps
+  len=  128: p50=   4.00ms  p95=   4.20ms  mean=   4.01ms  thr= 249.4 rps
+  len=  256: p50=   6.63ms  p95=   6.87ms  mean=   6.61ms  thr= 151.2 rps
+  len=  512: p50=  17.83ms  p95=  18.15ms  mean=  17.88ms  thr=  55.9 rps
+
+=== bge-small-en-v1.5 ===
+  len=   32: p50=  10.79ms  p95=  11.63ms  mean=  10.83ms  thr=  92.4 rps
+  len=   64: p50=  13.81ms  p95=  13.89ms  mean=  13.83ms  thr=  72.3 rps
+  len=  128: p50=  20.28ms  p95=  20.41ms  mean=  20.30ms  thr=  49.3 rps
+  len=  256: p50=  34.20ms  p95=  35.77ms  mean=  30.90ms  thr=  32.4 rps
+  len=  512: p50=  51.44ms  p95=  51.99ms  mean=  51.47ms  thr=  19.4 rps
+
+=== modernbert-base ===
+  len=   32: p50=  41.17ms  p95=  41.38ms  mean=  40.77ms  thr=  24.5 rps
+  len=   64: p50=  55.31ms  p95=  59.93ms  mean=  56.35ms  thr=  17.7 rps
+  len=  128: p50=  77.49ms  p95=  93.01ms  mean=  80.61ms  thr=  12.4 rps
+  len=  256: p50= 123.26ms  p95= 128.32ms  mean= 122.44ms  thr=   8.2 rps
+  len=  512: p50= 247.29ms  p95= 256.32ms  mean= 247.69ms  thr=   4.0 rps
+  len= 1024: p50= 563.48ms  p95= 583.00ms  mean= 569.15ms  thr=   1.8 rps
+  len= 2048: p50=1550.66ms  p95=1875.51ms  mean=1602.06ms  thr=   0.6 rps
+  len= 4096: p50=4866.73ms  p95=5228.52ms  mean=4883.76ms  thr=   0.2 rps
+
+=== ettin-encoder-150m ===
+  len=   32: p50=  37.75ms  p95=  42.07ms  mean=  37.64ms  thr=  26.6 rps
+  len=   64: p50=  46.06ms  p95=  51.14ms  mean=  46.96ms  thr=  21.3 rps
+  len=  128: p50=  68.65ms  p95=  73.27ms  mean=  69.55ms  thr=  14.4 rps
+  len=  256: p50= 116.48ms  p95= 122.39ms  mean= 116.93ms  thr=   8.6 rps
+  len=  512: p50= 245.10ms  p95= 256.00ms  mean= 246.35ms  thr=   4.1 rps
+  len= 1024: p50= 560.95ms  p95= 576.87ms  mean= 562.71ms  thr=   1.8 rps
+  len= 2048: p50=1564.26ms  p95=1862.62ms  mean=1598.28ms  thr=   0.6 rps
+  len= 4096: p50=4817.39ms  p95=5084.38ms  mean=4809.83ms  thr=   0.2 rps
+
+=== gte-base-en-v1.5 ===
+  len=   32: p50=  45.23ms  p95=  45.91ms  mean=  45.27ms  thr=  22.1 rps
+  len=   64: p50=  61.59ms  p95=  63.69ms  mean=  57.82ms  thr=  17.3 rps
+  len=  128: p50=  74.69ms  p95=  79.20ms  mean=  75.50ms  thr=  13.2 rps
+  len=  256: p50= 129.49ms  p95= 134.73ms  mean= 129.50ms  thr=   7.7 rps
+  len=  512: p50= 252.58ms  p95= 260.63ms  mean= 252.75ms  thr=   4.0 rps
+  len= 1024: p50= 527.13ms  p95= 615.29ms  mean= 539.68ms  thr=   1.9 rps
+  len= 2048: p50=1383.80ms  p95=1586.07ms  mean=1390.93ms  thr=   0.7 rps
+  len= 4096: p50=3537.57ms  p95=3886.62ms  mean=3564.36ms  thr=   0.3 rps
+
+Wrote results/latency_cpu.json (total 1608.9s)
+[run] done. Results in /home/jialin/pi-benchmark/latency_cuda/results/
