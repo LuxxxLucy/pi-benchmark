@@ -32,6 +32,24 @@ export PYTHONUNBUFFERED=1
 
 cd "$(dirname "$0")/.."
 
+# ── Preflight: BIPIA is local-only; bail early with a clear instruction. ─
+BIPIA_MARKER="datasets/bipia_repo/benchmark/text_attack_train.json"
+if [[ ! -f "${BIPIA_MARKER}" ]]; then
+  cat >&2 <<EOF
+ERROR: BIPIA training data not found at ${BIPIA_MARKER}
+
+The v2 training recipe reads BIPIA from local disk (datasets/ is gitignored
+per repo policy). Run the one-shot bootstrap script first:
+
+    bash scripts/setup_data.sh
+
+It clones microsoft/BIPIA (shallow, ~few MB) and warms the HuggingFace cache
+for the five HF datasets used in training + eval. After that completes,
+rerun this script.
+EOF
+  exit 2
+fi
+
 DATE_TAG="$(date +%Y-%m-%d)"
 if [[ "${SMOKE:-0}" == "1" ]]; then
   RESULTS_DIR="result/lightweight_sweep_${DATE_TAG}_smoke"
