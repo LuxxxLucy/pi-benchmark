@@ -168,12 +168,14 @@ for entry in "${CANDIDATES[@]}"; do
     device_flag="auto"
   fi
 
-  # Idempotent training: skip if a real checkpoint exists AND was trained on
-  # GPU. If it was trained on CPU (FORCE_RETRAIN=1 or we detect CPU-trained
-  # ckpt from config.json), retrain. Smoke always retrains.
+  # Idempotent training: skip ONLY if we have a complete checkpoint
+  # (best_model.pt + config.json) that records GPU training. Missing
+  # config.json means partial / interrupted training — always retrain.
   skip_train=0
   if [[ -f "${save_dir}/best_model.pt" && "${SMOKE:-0}" != "1" && "${FORCE_RETRAIN:-0}" != "1" ]]; then
-    if [[ -f "${save_dir}/config.json" ]]; then
+    if [[ ! -f "${save_dir}/config.json" ]]; then
+      echo "[force retrain] ${save_dir} has best_model.pt but no config.json — partial / interrupted ckpt, retraining"
+    else
       trained_device=$(uv run python -c "
 import json,sys
 cfg=json.load(open('${save_dir}/config.json'))
@@ -183,8 +185,6 @@ print(cfg.get('device','unknown'))" 2>/dev/null || echo "unknown")
       else
         echo "[force retrain] ${save_dir} was trained on ${trained_device}; GPU retrain required"
       fi
-    else
-      skip_train=1  # no config, legacy — assume OK
     fi
   fi
 
