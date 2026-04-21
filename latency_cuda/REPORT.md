@@ -236,6 +236,15 @@ The parent [REPORT.md](../../REPORT.md) §8 "Build Recipe" picks a 66M-class enc
 
 Each TODO names the experiment that would resolve it.
 
+**Downstream follow-ups surfaced by the architecture sweep** (trained models, not covered here):
+
+0. **Recipe rebalance**, then rerun the architecture sweep. The training-side sweep in the playground benchmark report found that all five fast arch-baselines converge to the same val F1 on the current v2 data mix — jayavibhav dominates 91 % of training, hiding architectural differences. Capping per-source contribution would let this latency report's Pareto implications (11–17 M sub-2 ms candidates) actually translate to trained-model recommendations.
+
+0a. **Correct NotInject HF id**. `bowen-uchicago/notinject` returns 404 on the current Hub. Needs a working id (or WildGuardMix benign as a substitute) before the FPR probe column in the sweep summary is usable.
+
+0b. **Trained-model CPU latency rerun** with the updated `eval_trained.py --latency cpu`. Arch-baseline CPU numbers (§3) are a close proxy for the trained classifier (same backbone, small head change), but a direct measurement removes the proxy caveat.
+
+
 1. **Explain the deberta-v3-xsmall / deberta-v3-small CUDA inversion.** xsmall (70.8M) runs 12.5 ms @ 512; small (141.9M) runs 8.4 ms. Param count doesn't explain the ordering. Candidate causes: (a) different disentangled-attention hidden-size splits trigger different kernel implementations, (b) xsmall's shared-embedding scheme forces an extra kernel, (c) autotune picks a worse path at xsmall's shape. Needs `torch.profiler` trace on both models, same input.
 2. **Verify testsavantai-base backbone family.** Card claims DeBERTa-v3-base (86M); measured 67.0M + CUDA/CPU latency matches DistilBERT-67M. Check `config.json` in the checkpoint to confirm architecture; fix `src/models.py` family tag if the card is wrong.
 3. **Explain gte-base's long-context advantage over ModernBERT.** gte-base-en-v1.5 is 1.7× faster at 4096 tokens than ModernBERT-base / Ettin at nearly identical param count. Candidate: ModernBERT's alternating local/global attention dispatches a global-attention kernel every few layers that does not fuse as cleanly as gte's RoPE-standard-attention. Trace would confirm; practical takeaway holds regardless.

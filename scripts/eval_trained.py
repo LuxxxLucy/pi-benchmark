@@ -177,39 +177,87 @@ def metrics_at(scores, labels, threshold) -> dict:
             "fpr": round(fpr, 4), "f1": round(f1, 4)}
 
 
-def measure_latency(model, tokenizer, device, max_length: int,
-                    n_warmup: int = 10, n_iters: int = 50) -> dict:
-    """Single-sample CUDA latency sanity check (batch=1)."""
-    if device.type != "cuda":
-        return {"device": str(device), "note": "skipped (CPU latency covered by latency_cuda report)"}
+def _measure_on(model_for_device, tokenizer, device, max_length: int,
+                use_amp: bool, n_warmup: int, n_iters: int) -> dict:
     sample = "The quick brown fox jumps over the lazy dog. " * 40  # ~256 tokens post-tokenize
     encoded = tokenizer(sample, padding="max_length", truncation=True,
                         max_length=max_length, return_tensors="pt")
     input_ids = encoded["input_ids"].to(device)
     attention_mask = encoded["attention_mask"].to(device)
 
-    model.eval()
-    amp_ctx = torch.autocast(device_type="cuda", dtype=torch.bfloat16)
+    model_for_device.eval()
+    amp_ctx = (torch.autocast(device_type="cuda", dtype=torch.bfloat16)
+               if use_amp else nullcontext())
+    is_cuda = device.type == "cuda"
+
+    def sync():
+        if is_cuda:
+            torch.cuda.synchronize()
+
     with torch.no_grad():
         for _ in range(n_warmup):
             with amp_ctx:
-                _ = model(input_ids, attention_mask)
-        torch.cuda.synchronize()
+                _ = model_for_device(input_ids, attention_mask)
+        sync()
         timings = []
         for _ in range(n_iters):
             t0 = time.perf_counter()
             with amp_ctx:
-                _ = model(input_ids, attention_mask)
-            torch.cuda.synchronize()
+                _ = model_for_device(input_ids, attention_mask)
+            sync()
             timings.append((time.perf_counter() - t0) * 1000)
     timings.sort()
     return {
-        "device": "cuda", "dtype": "bfloat16", "max_length": max_length,
-        "n_iters": n_iters,
+        "device": device.type,
+        "dtype": "bfloat16" if use_amp else "float32",
+        "max_length": max_length, "n_iters": n_iters,
         "p50_ms": round(timings[n_iters // 2], 3),
         "p95_ms": round(timings[int(n_iters * 0.95)], 3),
         "mean_ms": round(sum(timings) / n_iters, 3),
     }
+
+
+def measure_latency(model, tokenizer, max_length: int, which: str,
+                    cuda_available: bool, n_warmup: int = 10,
+                    n_iters: int = 50) -> dict:
+    """Batch=1, single-sample latency. `which` ∈ {cpu, gpu, both, none}.
+
+    CPU is the primary A6 deployment target. GPU is the optional secondary
+    (bf16 autocast). Returns a dict with sub-results keyed by device plus
+    a top-level mirror of the CPU result for the aggregator.
+    """
+    if which == "none":
+        return {"note": "latency measurement skipped (--latency none)"}
+    if which == "gpu" and not cuda_available:
+        return {"note": "gpu requested but cuda unavailable"}
+
+    original_device = next(model.parameters()).device
+    out: dict = {}
+
+    # CPU pass — move model to CPU, measure fp32, then leave it there (caller
+    # will restore the device if it still needs it on GPU).
+    if which in ("cpu", "both"):
+        model.to("cpu")
+        out["cpu"] = _measure_on(model, tokenizer, torch.device("cpu"),
+                                 max_length=max_length, use_amp=False,
+                                 n_warmup=n_warmup, n_iters=n_iters)
+
+    # GPU pass — move back to CUDA (bf16 autocast). Skipped if unavailable or
+    # user explicitly picked "cpu".
+    if which in ("gpu", "both") and cuda_available:
+        model.to("cuda")
+        out["gpu"] = _measure_on(model, tokenizer, torch.device("cuda"),
+                                 max_length=max_length, use_amp=True,
+                                 n_warmup=n_warmup, n_iters=n_iters)
+
+    model.to(original_device)  # restore
+
+    primary = "cpu" if "cpu" in out else ("gpu" if "gpu" in out else None)
+    if primary:
+        out["primary"] = primary
+        for k in ("p50_ms", "p95_ms", "mean_ms", "device", "dtype"):
+            out[k] = out[primary].get(k)
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -228,6 +276,10 @@ def main():
                         help="Cap each test set to 100 samples for a fast pipeline sanity run")
     parser.add_argument("--smoke-n", type=int, default=100,
                         help="Cap per test set when --smoke (default 100)")
+    parser.add_argument("--latency", choices=["cpu", "gpu", "both", "none"],
+                        default="both",
+                        help="Which devices to measure single-sample latency on "
+                             "(default: both; CPU is the A6 primary target, GPU is secondary)")
     args = parser.parse_args()
 
     # ── Device
@@ -300,12 +352,21 @@ def main():
               f"R={m['recall']:.3f}  FPR={m['fpr']:.3f}")
     eval_elapsed = time.time() - t_eval0
 
-    # ── Latency sanity check
-    print("\nLatency sanity (single-sample, batch=1)...")
-    latency = measure_latency(model, tokenizer, dev, max_length=max_length)
-    if "p50_ms" in latency:
-        print(f"  p50={latency['p50_ms']:.2f} ms  p95={latency['p95_ms']:.2f} ms  "
+    # ── Latency sanity check — CPU primary, GPU optional (see --latency)
+    print(f"\nLatency sanity (single-sample, batch=1) — measuring {args.latency}...")
+    latency = measure_latency(
+        model, tokenizer, max_length=max_length,
+        which=args.latency, cuda_available=(dev.type == "cuda"),
+    )
+    if "cpu" in latency:
+        c = latency["cpu"]
+        print(f"  cpu fp32  p50={c['p50_ms']:.2f} ms  p95={c['p95_ms']:.2f} ms  "
               f"(max_length={max_length})")
+    if "gpu" in latency:
+        g = latency["gpu"]
+        print(f"  gpu bf16  p50={g['p50_ms']:.2f} ms  p95={g['p95_ms']:.2f} ms")
+    if "note" in latency:
+        print(f"  {latency['note']}")
 
     # ── Write JSON
     args.output.parent.mkdir(parents=True, exist_ok=True)

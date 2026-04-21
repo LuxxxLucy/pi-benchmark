@@ -63,22 +63,28 @@ def format_row(name: str, latency: dict, eval_json: dict | None) -> dict:
         row[f"{ds_name}_fpr"] = m.get("fpr")
         row[f"{ds_name}_n"] = m.get("n")
 
-    # Eval-time latency sanity
+    # Eval-time latency sanity — CPU is primary, GPU is secondary.
     ls = eval_json.get("latency_sanity", {})
-    row["eval_latency_p50_ms"] = ls.get("p50_ms")
+    cpu_ls = ls.get("cpu", {}) if isinstance(ls, dict) else {}
+    gpu_ls = ls.get("gpu", {}) if isinstance(ls, dict) else {}
+    row["eval_cpu_p50_ms"] = cpu_ls.get("p50_ms")
+    row["eval_cpu_p95_ms"] = cpu_ls.get("p95_ms")
+    row["eval_gpu_p50_ms"] = gpu_ls.get("p50_ms")
+    row["eval_gpu_p95_ms"] = gpu_ls.get("p95_ms")
+    # Backward-compat: some older JSONs mirrored the primary at top level.
+    row["eval_latency_p50_ms"] = ls.get("p50_ms") or cpu_ls.get("p50_ms") or gpu_ls.get("p50_ms")
     return row
 
 
 def markdown_table(rows: list[dict]) -> str:
-    hdr = ["Model", "M", "GPU@512", "val_loss",
+    hdr = ["Model", "M", "CPU p50", "GPU p50", "val_loss",
            "BIPIA F1", "BIPIA FPR",
            "deepset F1", "deepset FPR",
            "xxz224 F1", "xxz224 FPR",
-           "NotInject FPR",
-           "Eval p50"]
-    aligns = ["left", "right", "right", "right",
+           "NotInject FPR"]
+    aligns = ["left", "right", "right", "right", "right",
               "right", "right", "right", "right",
-              "right", "right", "right", "right"]
+              "right", "right", "right"]
 
     def fmt(v, kind):
         if v is None:
@@ -100,7 +106,8 @@ def markdown_table(rows: list[dict]) -> str:
         lines.append("| " + " | ".join([
             r["model"],
             fmt(r.get("params_M"), "f"),
-            fmt(r.get("gpu_p50_ms_512"), "ms"),
+            fmt(r.get("eval_cpu_p50_ms"), "ms"),
+            fmt(r.get("eval_gpu_p50_ms"), "ms"),
             fmt(r.get("val_loss"), "f3"),
             fmt(r.get("bipia_test_f1"), "f3"),
             fmt(r.get("bipia_test_fpr"), "pct"),
@@ -109,7 +116,6 @@ def markdown_table(rows: list[dict]) -> str:
             fmt(r.get("xxz224_test_f1"), "f3"),
             fmt(r.get("xxz224_test_fpr"), "pct"),
             fmt(r.get("notinject_fpr"), "pct"),
-            fmt(r.get("eval_latency_p50_ms"), "ms"),
         ]) + " |")
     return "\n".join(lines)
 
@@ -122,31 +128,42 @@ def insights(rows: list[dict]) -> list[str]:
     if not usable:
         return ["(no rows with eval data — skipping insights)"]
 
+    # Pareto frontier uses CPU latency — A6's primary deployment target.
+    # Fall back to GPU latency if CPU wasn't measured.
+    def lat(r):
+        return r.get("eval_cpu_p50_ms") or r.get("eval_gpu_p50_ms")
+    lat_label = "CPU"
+    if all(r.get("eval_cpu_p50_ms") is None for r in usable):
+        lat_label = "GPU"
+
     best_f1 = max(usable, key=lambda r: r["bipia_test_f1"])
     out.append(f"Best BIPIA F1: **{best_f1['model']}** "
                f"({best_f1['bipia_test_f1']:.3f}, {best_f1['params_M']}M, "
-               f"{best_f1['gpu_p50_ms_512']:.2f} ms GPU @512).")
+               f"{(lat(best_f1) or 0):.2f} ms {lat_label}).")
 
     # Pareto frontier: for each model, is there another model with BOTH smaller latency AND higher F1?
     frontier = []
     for r in usable:
+        r_lat = lat(r)
+        if r_lat is None:
+            continue
         dominated = False
         for r2 in usable:
             if r is r2:
                 continue
-            if (r2["gpu_p50_ms_512"] is not None and r["gpu_p50_ms_512"] is not None
-                    and r2["gpu_p50_ms_512"] <= r["gpu_p50_ms_512"]
+            r2_lat = lat(r2)
+            if (r2_lat is not None
+                    and r2_lat <= r_lat
                     and r2["bipia_test_f1"] >= r["bipia_test_f1"]
-                    and (r2["gpu_p50_ms_512"] < r["gpu_p50_ms_512"]
-                         or r2["bipia_test_f1"] > r["bipia_test_f1"])):
+                    and (r2_lat < r_lat or r2["bipia_test_f1"] > r["bipia_test_f1"])):
                 dominated = True
                 break
         if not dominated:
             frontier.append(r)
-    frontier.sort(key=lambda r: r["gpu_p50_ms_512"] or 0)
-    out.append("Latency–F1 Pareto frontier (BIPIA test): "
+    frontier.sort(key=lambda r: lat(r) or 0)
+    out.append(f"Latency–F1 Pareto frontier (BIPIA test, {lat_label} latency): "
                + ", ".join(f"{r['model']} ({r['bipia_test_f1']:.3f}"
-                           f" @ {r['gpu_p50_ms_512']:.2f}ms)" for r in frontier))
+                           f" @ {lat(r):.2f}ms)" for r in frontier))
 
     # Over-defense: highest NotInject FPR is the most trigger-happy model.
     with_notinject = [r for r in usable if r.get("notinject_fpr") is not None]
