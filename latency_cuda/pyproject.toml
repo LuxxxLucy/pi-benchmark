@@ -3,10 +3,11 @@ name = "pi-latency-cuda"
 version = "0.1.0"
 description = "Latency benchmark for lightweight classifiers on Linux + CUDA"
 requires-python = ">=3.11"
-# torch pinned <2.7 to stay on default-PyPI cu124 wheels (works with driver
-# CUDA 12.4+). 2.7 ships cu126, 2.8 ships cu128 — both need newer drivers.
+# torch hard-pinned to 2.6.0 — default-PyPI cu124 wheel, works with the
+# 3090's driver CUDA 12.5. Same version pinned in parent pi-benchmark
+# pyproject.toml so both sub-projects resolve to the identical torch.
 dependencies = [
-    "torch>=2.5,<2.7",
+    "torch==2.6.0",
     "transformers>=4.51",
     "huggingface-hub>=0.24",
     "numpy",

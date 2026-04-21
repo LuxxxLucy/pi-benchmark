@@ -32,7 +32,7 @@ export PYTHONUNBUFFERED=1
 
 cd "$(dirname "$0")/.."
 
-# ── Preflight: BIPIA is local-only; bail early with a clear instruction. ─
+# ── Preflight 1: BIPIA is local-only; bail early with a clear instruction. ─
 BIPIA_MARKER="datasets/bipia_repo/benchmark/text_attack_train.json"
 if [[ ! -f "${BIPIA_MARKER}" ]]; then
   cat >&2 <<EOF
@@ -48,6 +48,31 @@ for the five HF datasets used in training + eval. After that completes,
 rerun this script.
 EOF
   exit 2
+fi
+
+# ── Preflight 2: GPU required. Training on CPU is ~30× slower and not a ─
+# test of anything this sweep cares about (we're comparing bf16 GPU
+# trainability, not x86 CPU throughput). Fail loudly, not silently.
+if [[ "${ALLOW_CPU:-0}" != "1" ]]; then
+  if ! uv run python -c "import torch, sys; sys.exit(0 if torch.cuda.is_available() else 1)" 2>/dev/null; then
+    cat >&2 <<EOF
+ERROR: CUDA is not available in the current venv.
+
+Training on CPU would take ~30× longer (days, not hours) and the whole
+point of this sweep is batch=1 GPU trainability. Fix torch first:
+
+    uv sync   # re-resolve against the torch==2.6.0 pin in pyproject.toml
+
+If torch still won't see the GPU after that, run:
+
+    uv run python -c "import torch; print(torch.__version__, torch.cuda.is_available(), torch.version.cuda)"
+
+Expected: 2.6.0+cu124  True  12.4   (on the 3090 with driver CUDA ≥ 12.4)
+
+If you really do want to run on CPU anyway (you don't), set ALLOW_CPU=1.
+EOF
+    exit 3
+  fi
 fi
 
 DATE_TAG="$(date +%Y-%m-%d)"
@@ -136,16 +161,41 @@ for entry in "${CANDIDATES[@]}"; do
   echo "   eval:     ${eval_json}"
   echo "──────────────────────────────────────────────────────────────────"
 
-  # Idempotent training: skip if a real checkpoint exists. Smoke always retrains
-  # (the smoke ckpt is throwaway; different dir prevents colliding with real).
-  if [[ -f "${save_dir}/best_model.pt" && "${SMOKE:-0}" != "1" ]]; then
-    echo "[skip train] ${save_dir}/best_model.pt already exists"
+  # Device flag: cuda by default (preflight already enforced availability),
+  # cpu only if user explicitly opted in.
+  device_flag="cuda"
+  if [[ "${ALLOW_CPU:-0}" == "1" ]]; then
+    device_flag="auto"
+  fi
+
+  # Idempotent training: skip if a real checkpoint exists AND was trained on
+  # GPU. If it was trained on CPU (FORCE_RETRAIN=1 or we detect CPU-trained
+  # ckpt from config.json), retrain. Smoke always retrains.
+  skip_train=0
+  if [[ -f "${save_dir}/best_model.pt" && "${SMOKE:-0}" != "1" && "${FORCE_RETRAIN:-0}" != "1" ]]; then
+    if [[ -f "${save_dir}/config.json" ]]; then
+      trained_device=$(uv run python -c "
+import json,sys
+cfg=json.load(open('${save_dir}/config.json'))
+print(cfg.get('device','unknown'))" 2>/dev/null || echo "unknown")
+      if [[ "${trained_device}" == cuda* ]]; then
+        skip_train=1
+      else
+        echo "[force retrain] ${save_dir} was trained on ${trained_device}; GPU retrain required"
+      fi
+    else
+      skip_train=1  # no config, legacy — assume OK
+    fi
+  fi
+
+  if [[ ${skip_train} -eq 1 ]]; then
+    echo "[skip train] ${save_dir}/best_model.pt already present (GPU-trained)"
   else
     t0=$(date +%s)
     uv run python train_v2.py \
       --base-model "${hf_id}" \
       --save-dir   "${save_dir}" \
-      --device     auto \
+      --device     "${device_flag}" \
       --epochs     "${EPOCHS}" \
       --batch-size "${BATCH_SIZE}" \
       --lr-bert    "${LR_BERT}" \
@@ -162,7 +212,7 @@ for entry in "${CANDIDATES[@]}"; do
     uv run python scripts/eval_trained.py \
       --save-dir "${save_dir}" \
       --output   "${eval_json}" \
-      --device   auto \
+      --device   "${device_flag}" \
       ${EVAL_SMOKE_FLAG}
   else
     echo "[skip eval] no checkpoint at ${save_dir}/best_model.pt"

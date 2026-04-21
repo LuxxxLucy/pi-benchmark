@@ -4,7 +4,12 @@ version = "0.1.0"
 requires-python = ">=3.11"
 dependencies = [
     "transformers>=4.40",
-    "torch>=2.0",
+    # Hard-pinned to 2.6.0 — the exact version that works on the 3090 host
+    # (driver CUDA 12.5, default-PyPI cu124 wheel). torch 2.7 ships cu126 and
+    # 2.8 ships cu128 wheels that require newer drivers.
+    # Matches latency_cuda/uv.lock resolved version; same decision across
+    # both sub-projects so `uv sync` produces identical torch everywhere.
+    "torch==2.6.0",
     "datasets>=2.0",
     "pandas",
     "tabulate",
