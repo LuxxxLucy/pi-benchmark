@@ -1,0 +1,21 @@
+[project]
+name = "quantization-study"
+version = "0.1.0"
+description = "PI defender accuracy and latency under int8 quantization"
+requires-python = ">=3.11"
+dependencies = [
+    "torch>=2.6.0",
+    "transformers>=4.40",
+    "datasets>=2.18",
+    "huggingface-hub",
+    "numpy",
+    "pyyaml",
+    "scikit-learn",
+    "matplotlib>=3.8",
+    "onnx>=1.16",
+    "onnxruntime>=1.18",
+    "optimum[onnxruntime]>=1.20",
+]
+
+[tool.uv]
+package = false

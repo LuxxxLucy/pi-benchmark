@@ -1,0 +1,27 @@
+[project]
+name = "cpu-latency"
+version = "0.1.0"
+description = "CPU latency benchmark across nine fp32 inference runtimes"
+requires-python = ">=3.11"
+dependencies = [
+    "torch>=2.6.0",
+    "transformers>=4.40",
+    "tokenizers",
+    "huggingface-hub",
+    "numpy",
+    "psutil",
+    "onnx>=1.16",
+    "onnxruntime>=1.18",
+    "optimum[onnxruntime]>=1.20",
+    "ctranslate2>=4.4",
+    "intel-extension-for-pytorch; sys_platform == 'linux' and platform_machine == 'x86_64'",
+]
+
+[project.optional-dependencies]
+llamacpp = ["llama-cpp-python>=0.3.0"]
+tflite = ["ai-edge-torch>=0.3", "tflite-runtime"]
+executorch = ["executorch>=0.5"]
+openvino = ["openvino>=2024.4", "optimum-intel[openvino]"]
+
+[tool.uv]
+package = false

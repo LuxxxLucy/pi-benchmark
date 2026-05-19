@@ -1,8 +1,14 @@
 models/
 datasets/
 result/
+results/
+models_converted/
+onnx_cache/
 __pycache__/
 *.pyc
+*.png
+.DS_Store
 .venv/
 *.egg-info/
 uv.lock
+run.log
